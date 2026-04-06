@@ -1,4 +1,9 @@
 torch
 torchvision
 transformers
-pillow
+accelerate
+vllm
+huggingface_hub
+datasets
+qwen-vl-utils
+tqdm
