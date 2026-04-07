@@ -3,12 +3,12 @@ import os
 
 import torch
 from PIL import Image
-from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
+from transformers import Qwen2_5_VLForConditionalGeneration, AutoTokenizer, AutoProcessor
+from qwen_vl_utils import process_vision_info
 
 MODEL_ID = "Qwen/Qwen2.5-VL-3B-Instruct"
-MAX_NEW_TOKENS = 256
+MAX_NEW_TOKENS = 128
 TEMPERATURE = 0.2
-TOP_P = 0.9
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 IMAGES_DIR = os.path.join(PROJECT_DIR, "images")
 SUPPORTED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
@@ -48,26 +48,31 @@ def find_images():
 
 def resolve_runtime():
     if torch.cuda.is_available():
-        return torch.device("cuda"), torch.bfloat16
+        return torch.device("cuda")
     if torch.backends.mps.is_available():
-        return torch.device("mps"), torch.float16
-    return torch.device("cpu"), torch.bfloat16
+        return torch.device("mps")
+    return torch.device("cpu")
 
 
 def main():
-    args = parse_args()
-    prompt = args.prompt.strip() or "Describe the image in detail."
     image_paths = find_images()
-    device, torch_dtype = resolve_runtime()
+    device = resolve_runtime()
 
-    print(f"Loading model: {MODEL_ID} on {device} with {torch_dtype}")
+    print(f"Loading model: {MODEL_ID} on {device}")
+
     model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
         MODEL_ID,
-        torch_dtype=torch_dtype,
-    )
+        torch_dtype=torch.bfloat16,
+        attn_implementation="flash_attention_2",
+        device_map="auto")
+    
     model.to(device)
     model.eval()
+
     processor = AutoProcessor.from_pretrained(MODEL_ID)
+
+    args = parse_args()
+    prompt = args.prompt.strip() or "Describe the image in detail."
 
     for image_path in image_paths:
         image = Image.open(image_path).convert("RGB")
@@ -75,17 +80,13 @@ def main():
             {
                 "role": "user",
                 "content": [
-                    {"type": "image"},
+                    {"type": "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen-VL/assets/demo.jpeg"},
                     {"type": "text", "text": prompt},
                 ],
             }
         ]
 
-        text = processor.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True,
-        )
+        text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
         inputs = processor(
             text=[text],
@@ -93,27 +94,20 @@ def main():
             padding=True,
             return_tensors="pt",
         )
-        inputs = {k: v.to(device) for k, v in inputs.items()}
+        inputs = inputs.to(device)
 
         with torch.inference_mode():
             generated_ids = model.generate(
                 **inputs,
                 max_new_tokens=MAX_NEW_TOKENS,
-                do_sample=True,
-                temperature=TEMPERATURE,
-                top_p=TOP_P,
-            )
+                temperature=TEMPERATURE)
 
         generated_ids_trimmed = [
-            out_ids[len(in_ids):]
-            for in_ids, out_ids in zip(inputs["input_ids"], generated_ids)
+            out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
         ]
-
         output_text = processor.batch_decode(
-            generated_ids_trimmed,
-            skip_special_tokens=True,
-            clean_up_tokenization_spaces=False,
-        )[0]
+            generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
+        )
 
         print(f"\n=== RESPONSE: {os.path.basename(image_path)} ===")
         print(output_text)
