@@ -1,10 +1,8 @@
 import argparse
 import os
-
 import torch
 from PIL import Image
-from transformers import Qwen2_5_VLForConditionalGeneration, AutoTokenizer, AutoProcessor
-from qwen_vl_utils import process_vision_info
+from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 
 MODEL_ID = "Qwen/Qwen2.5-VL-3B-Instruct"
 MAX_NEW_TOKENS = 128
@@ -54,19 +52,49 @@ def resolve_runtime():
     return torch.device("cpu")
 
 
+def resolve_model_load_config(device):
+    if device.type == "cuda":
+        dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+        try:
+            import flash_attn 
+
+            return {
+                "torch_dtype": dtype,
+                "attn_implementation": "flash_attention_2",
+                "device_map": "auto",
+            }
+        except ImportError:
+            return {
+                "torch_dtype": dtype,
+                "attn_implementation": "sdpa",
+                "device_map": "auto",
+            }
+
+    if device.type == "mps":
+        return {"torch_dtype": torch.float16}
+
+    return {"torch_dtype": torch.float32}
+
+
 def main():
     image_paths = find_images()
     device = resolve_runtime()
+    model_load_config = resolve_model_load_config(device)
 
     print(f"Loading model: {MODEL_ID} on {device}")
+    print(
+        "Model settings:",
+        f"dtype={model_load_config['torch_dtype']},",
+        f"attention={model_load_config.get('attn_implementation', 'default')}",
+    )
 
     model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
         MODEL_ID,
-        torch_dtype=torch.bfloat16,
-        attn_implementation="flash_attention_2",
-        device_map="auto")
-    
-    model.to(device)
+        **model_load_config,
+    )
+
+    if "device_map" not in model_load_config:
+        model.to(device)
     model.eval()
 
     processor = AutoProcessor.from_pretrained(MODEL_ID)
@@ -80,7 +108,7 @@ def main():
             {
                 "role": "user",
                 "content": [
-                    {"type": "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen-VL/assets/demo.jpeg"},
+                    {"type": "image", "image": image},
                     {"type": "text", "text": prompt},
                 ],
             }
