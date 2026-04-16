@@ -343,6 +343,10 @@ def main():
                 args.max_new_tokens,
                 args.temperature,
             )
+            
+            hallucination = True
+            if (vlm_answer.lower() == item["target_answer"].lower() or vlm_answer.lower() in [a.lower() for a in item["annotator_answers"]]):
+                hallucination = False
 
             result = {
                 "question_id": item["question_id"],
@@ -359,6 +363,7 @@ def main():
                 "question_type": item["question_type"],
                 "question_file_type": item["question_file_type"],
                 "model": resolved_model_path,
+                "hallucination": hallucination,
             }
             f.write(json.dumps(result, ensure_ascii=False) + "\n")
             f.flush()
