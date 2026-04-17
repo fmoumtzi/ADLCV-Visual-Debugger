@@ -1,0 +1,24 @@
+model_path: models/Qwen2.5-VL-3B-Instruct
+train_jsonl: results/task2/task2_verification_data.jsonl
+val_jsonl: ""
+train_split: train
+val_split: val
+output_dir: results/task2/sft
+
+epochs: 1
+batch_size: 1
+grad_accum_steps: 1
+learning_rate: 2.0e-5
+weight_decay: 0.01
+warmup_ratio: 0.05
+max_grad_norm: 1.0
+
+max_new_tokens_eval: 128
+eval_max_samples: 0
+slice_by_question_type: true
+save_each_epoch: true
+
+seed: 42
+num_workers: 0
+wandb_project: task2-verifier
+wandb_run_name: sft-qwen25-vl-3b

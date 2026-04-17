@@ -1,0 +1,27 @@
+model_path: results/task2/sft/best_checkpoint
+train_jsonl: results/task2/task2_verification_data.jsonl
+val_jsonl: ""
+train_split: train
+val_split: val
+output_dir: results/task2/grpo
+
+epochs: 1
+learning_rate: 1.0e-6
+weight_decay: 0.0
+max_grad_norm: 1.0
+grad_accum_steps: 1
+
+num_candidates: 4
+reward_normalized: false
+kl_coef: 0.02
+
+max_new_tokens: 128
+temperature: 0.8
+top_p: 0.95
+eval_every_steps: 50
+eval_max_samples: 0
+slice_by_question_type: true
+
+seed: 42
+wandb_project: task2-verifier
+wandb_run_name: grpo-qwen25-vl-3b

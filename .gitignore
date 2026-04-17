@@ -1,2 +1,4 @@
 Miniforge*.sh
 Anaconda*.sh
+__pycache__/
+*.py[cod]

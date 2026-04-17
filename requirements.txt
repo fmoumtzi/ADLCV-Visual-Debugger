@@ -8,3 +8,5 @@ datasets
 qwen-vl-utils
 tqdm
 pillow
+pyyaml
+wandb
