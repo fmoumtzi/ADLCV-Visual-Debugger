@@ -1,15 +1,15 @@
 from typing import Dict, Iterable, List
 
 
-def score_claim(predicted_verdict: str, gold_verdict: str) -> float:
-    return 1.0 if str(predicted_verdict).upper() == str(gold_verdict).upper() else -1.0
+def score_claim(predicted_hallucination: bool, gold_hallucination: bool) -> float:
+    return 1.0 if bool(predicted_hallucination) == bool(gold_hallucination) else -1.0
 
 
-def score_predictions(predictions: Dict[int, str], gold_labels: Dict[int, str]) -> Dict:
+def score_predictions(predictions: Dict[int, bool], gold_labels: Dict[int, bool]) -> Dict:
     rewards = []
-    for claim_id, gold in sorted(gold_labels.items()):
-        pred = predictions.get(claim_id, "CORRECT")
-        rewards.append(score_claim(pred, gold))
+    for claim_id, gold_hallucination in sorted(gold_labels.items()):
+        pred_hallucination = predictions.get(claim_id, False)
+        rewards.append(score_claim(pred_hallucination, gold_hallucination))
 
     total_reward = sum(rewards)
     normalized_reward = total_reward / max(len(rewards), 1)

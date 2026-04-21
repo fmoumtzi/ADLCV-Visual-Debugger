@@ -63,14 +63,27 @@ def parse_claim_entries(claims: List[Dict]) -> List[Dict]:
     return out
 
 
-def parse_label_entries(labels: List[Dict]) -> Dict[int, str]:
-    out: Dict[int, str] = {}
+def parse_optional_bool(value: object) -> Optional[bool]:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return None
+    text = str(value).strip().upper()
+    if text in {"TRUE", "1", "YES", "Y", "HALLUCINATED"}:
+        return True
+    if text in {"FALSE", "0", "NO", "N", "CORRECT"}:
+        return False
+    return None
+
+
+def parse_label_entries(labels: List[Dict]) -> Dict[int, bool]:
+    out: Dict[int, bool] = {}
     for entry in labels:
         if "claim_id" not in entry:
             continue
-        verdict = str(entry.get("verdict", "")).strip().upper()
-        if verdict:
-            out[int(entry["claim_id"])] = verdict
+        hallucination = parse_optional_bool(entry.get("hallucination"))
+        if hallucination is not None:
+            out[int(entry["claim_id"])] = hallucination
     return out
 
 
@@ -91,8 +104,12 @@ def normalize_task2_row(row: Dict) -> Dict:
             "model_response",
             row.get("vlm_generation", row.get("vlm_answer", "")),
         ),
+        "hallucination": parse_optional_bool(row.get("hallucination")),
         "claims": claims,
-        "labels": [{"claim_id": cid, "verdict": verdict} for cid, verdict in sorted(labels.items())],
+        "labels": [
+            {"claim_id": cid, "hallucination": hallucination}
+            for cid, hallucination in sorted(labels.items())
+        ],
         "split": row.get("split", ""),
         "question_id": row.get("question_id"),
     }

@@ -8,7 +8,7 @@ try:
 except ImportError:
     from io_utils import ensure_parent_dir, parse_label_entries, read_jsonl
 
-POSITIVE_CLASS = "HALLUCINATED"
+POSITIVE_CLASS = True
 
 
 def parse_args():
@@ -19,7 +19,7 @@ def parse_args():
         required=True,
         help=(
             "Predictions JSONL with fields image_id/question_id/question + "
-            "predictions=[{claim_id, verdict}]"
+            "predictions=[{claim_id, hallucination}]"
         ),
     )
     parser.add_argument(
@@ -58,12 +58,26 @@ def row_key(row: Dict) -> str:
     return f"{row.get('image_id')}::{question}"
 
 
-def normalize_pred_row(row: Dict) -> Dict[int, str]:
-    preds = {}
+def parse_optional_bool(value: object):
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return None
+    text = str(value).strip().upper()
+    if text in {"TRUE", "1", "YES", "Y", "HALLUCINATED"}:
+        return True
+    if text in {"FALSE", "0", "NO", "N", "CORRECT"}:
+        return False
+    return None
+
+
+def normalize_pred_row(row: Dict) -> Dict[int, bool]:
+    preds: Dict[int, bool] = {}
     for item in row.get("predictions", []):
         claim_id = int(item["claim_id"])
-        verdict = str(item.get("verdict", "")).upper()
-        preds[claim_id] = verdict
+        hallucination = parse_optional_bool(item.get("hallucination"))
+        if hallucination is not None:
+            preds[claim_id] = hallucination
     return preds
 
 
@@ -96,10 +110,10 @@ def evaluate_rows(
         answer_type = gold.get("answer_type", "unknown") or "unknown"
         question_type = gold.get("question_type", "unknown") or "unknown"
 
-        for claim_id, gold_verdict in gold_labels.items():
-            pred_verdict = pred_labels.get(claim_id, "CORRECT")
-            gold_pos = gold_verdict == POSITIVE_CLASS
-            pred_pos = pred_verdict == POSITIVE_CLASS
+        for claim_id, gold_hallucination in gold_labels.items():
+            pred_hallucination = pred_labels.get(claim_id, False)
+            gold_pos = gold_hallucination == POSITIVE_CLASS
+            pred_pos = pred_hallucination == POSITIVE_CLASS
             evaluated_claims += 1
 
             if gold_pos and pred_pos:
@@ -165,7 +179,7 @@ def evaluate_rows(
 
 def print_summary(metrics: Dict) -> None:
     overall = metrics["overall"]
-    print("=== Overall (HALLUCINATED) ===")
+    print("=== Overall (hallucination=True) ===")
     print(
         f"precision={overall['precision']:.4f}, "
         f"recall={overall['recall']:.4f}, f1={overall['f1']:.4f}"

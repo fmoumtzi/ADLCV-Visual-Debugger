@@ -1,23 +1,23 @@
 import re
 from typing import Dict, Iterable, List, Optional
 
-VALID_VERDICTS = {"CORRECT", "HALLUCINATED"}
+BOOL_LABELS = {"TRUE", "FALSE"}
 
 
-def normalize_verdict(value: str) -> Optional[str]:
+def normalize_hallucination_label(value: object) -> Optional[bool]:
     if not value:
         return None
-    text = value.strip().upper()
+    text = str(value).strip().upper()
     alias_map = {
-        "TRUE": "CORRECT",
-        "FALSE": "HALLUCINATED",
-        "SUPPORTED": "CORRECT",
-        "UNSUPPORTED": "HALLUCINATED",
-        "INCORRECT": "HALLUCINATED",
-        "WRONG": "HALLUCINATED",
+        "HALLUCINATED": True,
+        "UNSUPPORTED": True,
+        "INCORRECT": True,
+        "WRONG": True,
+        "CORRECT": False,
+        "SUPPORTED": False,
     }
-    if text in VALID_VERDICTS:
-        return text
+    if text in BOOL_LABELS:
+        return text == "TRUE"
     return alias_map.get(text)
 
 
@@ -51,7 +51,13 @@ def format_claims(claims: Iterable[Dict]) -> str:
 
 def format_target_labels(labels: Iterable[Dict]) -> str:
     ordered = sorted(labels, key=lambda x: int(x["claim_id"]))
-    return "\n".join(f"{int(row['claim_id'])}\t{row['verdict'].upper()}" for row in ordered)
+    lines = []
+    for row in ordered:
+        value = normalize_hallucination_label(row.get("hallucination"))
+        if value is None:
+            continue
+        lines.append(f"{int(row['claim_id'])}\t{'TRUE' if value else 'FALSE'}")
+    return "\n".join(lines)
 
 
 def build_verification_prompt(
@@ -67,8 +73,8 @@ def build_verification_prompt(
 
     pieces = [
         "You are verifying a previous visual answer claim-by-claim.",
-        "For each claim_id, output exactly one verdict: CORRECT or HALLUCINATED.",
-        "Output format: one line per claim, exactly `claim_id<TAB>VERDICT`.",
+        "For each claim_id, output hallucination as TRUE or FALSE.",
+        "Output format: one line per claim, exactly `claim_id<TAB>TRUE_OR_FALSE`.",
         "Do not output extra text.",
         f"Question: {question}",
     ]
@@ -83,8 +89,8 @@ def build_verification_prompt(
     return "\n\n".join(pieces)
 
 
-def parse_verifier_output(raw_text: str, expected_claim_ids: List[int]) -> Dict[int, str]:
-    predictions: Dict[int, str] = {}
+def parse_verifier_output(raw_text: str, expected_claim_ids: List[int]) -> Dict[int, bool]:
+    predictions: Dict[int, bool] = {}
     lines = [line.strip() for line in str(raw_text).splitlines() if line.strip()]
 
     for line in lines:
@@ -92,27 +98,27 @@ def parse_verifier_output(raw_text: str, expected_claim_ids: List[int]) -> Dict[
         if not match:
             continue
         claim_id = int(match.group(1))
-        verdict = normalize_verdict(match.group(2))
-        if verdict is not None:
-            predictions[claim_id] = verdict
+        hallucination = normalize_hallucination_label(match.group(2))
+        if hallucination is not None:
+            predictions[claim_id] = hallucination
 
     if len(predictions) < len(expected_claim_ids):
-        verdict_hits = []
+        bool_hits = []
         for line in lines:
             line_norm = line.upper()
-            if "HALLUCINATED" in line_norm:
-                verdict_hits.append("HALLUCINATED")
-            elif "CORRECT" in line_norm:
-                verdict_hits.append("CORRECT")
+            if "TRUE" in line_norm or "HALLUCINATED" in line_norm:
+                bool_hits.append(True)
+            elif "FALSE" in line_norm or "CORRECT" in line_norm:
+                bool_hits.append(False)
 
         for idx, claim_id in enumerate(expected_claim_ids):
             if claim_id in predictions:
                 continue
-            if idx < len(verdict_hits):
-                predictions[claim_id] = verdict_hits[idx]
+            if idx < len(bool_hits):
+                predictions[claim_id] = bool_hits[idx]
 
     for claim_id in expected_claim_ids:
         if claim_id not in predictions:
-            predictions[claim_id] = "CORRECT"
+            predictions[claim_id] = False
 
     return predictions

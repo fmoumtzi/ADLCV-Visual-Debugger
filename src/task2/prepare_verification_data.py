@@ -93,7 +93,7 @@ def build_label_lookup(label_rows: List[Dict]) -> Dict[str, List[Dict]]:
     out = {}
     for row in label_rows:
         key = sample_key(row)
-        labels = row.get("labels", [])
+        labels = normalize_labels(row.get("labels", []))
         if labels:
             out[key] = labels
     return out
@@ -115,10 +115,10 @@ def auto_label_target_overlap(claims: List[Dict], target_answer: str) -> List[Di
     for claim in claims:
         claim_norm = normalize_text(claim["text"])
         if target_norm and target_norm in claim_norm:
-            verdict = "CORRECT"
+            hallucination = False
         else:
-            verdict = "HALLUCINATED"
-        labels.append({"claim_id": claim["claim_id"], "verdict": verdict})
+            hallucination = True
+        labels.append({"claim_id": claim["claim_id"], "hallucination": hallucination})
     return labels
 
 
@@ -128,9 +128,9 @@ def parse_optional_bool(value: object) -> Optional[bool]:
     if value is None:
         return None
     text = str(value).strip().lower()
-    if text in {"true", "1", "yes", "y"}:
+    if text in {"true", "1", "yes", "y", "hallucinated"}:
         return True
-    if text in {"false", "0", "no", "n"}:
+    if text in {"false", "0", "no", "n", "correct"}:
         return False
     return None
 
@@ -138,8 +138,20 @@ def parse_optional_bool(value: object) -> Optional[bool]:
 def auto_label_task1_copy(claims: List[Dict], hallucination: Optional[bool]) -> List[Dict]:
     if hallucination is None:
         return []
-    verdict = "HALLUCINATED" if hallucination else "CORRECT"
-    return [{"claim_id": claim["claim_id"], "verdict": verdict} for claim in claims]
+    return [{"claim_id": claim["claim_id"], "hallucination": hallucination} for claim in claims]
+
+
+def normalize_labels(labels: List[Dict]) -> List[Dict]:
+    normalized = []
+    for entry in labels:
+        if "claim_id" not in entry:
+            continue
+        claim_id = int(entry["claim_id"])
+        hallucination = parse_optional_bool(entry.get("hallucination"))
+        if hallucination is None:
+            continue
+        normalized.append({"claim_id": claim_id, "hallucination": hallucination})
+    return normalized
 
 
 def standardize_row(row: Dict, max_claims: int) -> Dict:
@@ -174,9 +186,9 @@ def standardize_row(row: Dict, max_claims: int) -> Dict:
         "answer_type": row.get("answer_type", ""),
         "question_type": row.get("question_type", ""),
         "model_response": model_response,
-        "hallucination": row.get("hallucination"),
+        "hallucination": parse_optional_bool(row.get("hallucination")),
         "claims": claims,
-        "labels": row.get("labels", []),
+        "labels": normalize_labels(row.get("labels", [])),
     }
     return out
 

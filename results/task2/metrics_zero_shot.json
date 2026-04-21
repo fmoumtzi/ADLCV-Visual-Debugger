@@ -1,0 +1,57 @@
+{
+  "positive_class": "HALLUCINATED",
+  "overall": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 1,
+    "tn": 1,
+    "false_alarms": 0,
+    "misses": 1,
+    "evaluated_claims": 2,
+    "missing_prediction_rows": 0,
+    "hallucinated_prediction_rate": 0.0
+  },
+  "by_answer_type": {
+    "other": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "tn": 0
+    },
+    "yes/no": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 1
+    }
+  },
+  "by_question_type": {
+    "is this a": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 0,
+      "tn": 1
+    },
+    "what is the man": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "tn": 0
+    }
+  }
+}

@@ -19,7 +19,7 @@ except ImportError:  # pragma: no cover
 
 try:
     from .evaluate_verifier import evaluate_rows
-    from .io_utils import ensure_parent_dir, parse_label_entries, read_jsonl, write_jsonl
+    from .io_utils import ensure_parent_dir, read_jsonl, write_jsonl
     from .prompts import (
         build_verification_prompt,
         format_target_labels,
@@ -28,7 +28,7 @@ try:
     from .runtime import load_qwen_vl, open_rgb
 except ImportError:
     from evaluate_verifier import evaluate_rows
-    from io_utils import ensure_parent_dir, parse_label_entries, read_jsonl, write_jsonl
+    from io_utils import ensure_parent_dir, read_jsonl, write_jsonl
     from prompts import build_verification_prompt, format_target_labels, parse_verifier_output
     from runtime import load_qwen_vl, open_rgb
 
@@ -177,7 +177,7 @@ def build_collate_fn(processor):
             "attention_mask": full_enc["attention_mask"],
             "labels": labels,
         }
-        for key in ("pixel_values", "image_grid_thw"):
+        for key in ("pixel_values", "image_grid_thw", "video_grid_thw", "mm_token_type_ids"):
             if key in full_enc:
                 batch[key] = full_enc[key]
         return batch
@@ -256,7 +256,7 @@ def run_validation_generation(
                 "question_id": row.get("question_id"),
                 "question": row.get("question", ""),
                 "predictions": [
-                    {"claim_id": claim_id, "verdict": parsed[claim_id]}
+                    {"claim_id": claim_id, "hallucination": parsed[claim_id]}
                     for claim_id in expected_claim_ids
                 ],
             }
