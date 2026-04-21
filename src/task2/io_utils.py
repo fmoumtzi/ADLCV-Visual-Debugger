@@ -87,7 +87,10 @@ def normalize_task2_row(row: Dict) -> Dict:
         "target_answer": row.get("target_answer", row.get("vqa_ground_truth", "")),
         "answer_type": row.get("answer_type", ""),
         "question_type": row.get("question_type", ""),
-        "model_response": row.get("model_response", row.get("vlm_generation", "")),
+        "model_response": row.get(
+            "model_response",
+            row.get("vlm_generation", row.get("vlm_answer", "")),
+        ),
         "claims": claims,
         "labels": [{"claim_id": cid, "verdict": verdict} for cid, verdict in sorted(labels.items())],
         "split": row.get("split", ""),

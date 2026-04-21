@@ -124,7 +124,10 @@ def auto_label_target_overlap(claims: List[Dict], target_answer: str) -> List[Di
 
 def standardize_row(row: Dict, max_claims: int) -> Dict:
     question = row.get("question", row.get("vqa_question", ""))
-    model_response = row.get("model_response", row.get("vlm_generation", ""))
+    model_response = row.get(
+        "model_response",
+        row.get("vlm_generation", row.get("vlm_answer", "")),
+    )
     raw_claims = row.get("claims", [])
 
     claims = []

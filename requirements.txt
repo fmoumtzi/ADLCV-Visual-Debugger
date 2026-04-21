@@ -1,12 +1,12 @@
+# Core runtime
 torch
 torchvision
 transformers
 accelerate
-vllm
-huggingface_hub
-datasets
 qwen-vl-utils
 tqdm
 pillow
 pyyaml
+
+# Optional experiment tracking used by the training scripts when enabled
 wandb

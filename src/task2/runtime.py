@@ -20,7 +20,10 @@ def resolve_runtime() -> torch.device:
 def resolve_model_load_config(device: torch.device, for_training: bool) -> Dict:
     if device.type == "cuda":
         dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
-        config = {"torch_dtype": dtype}
+        config = {
+            "torch_dtype": dtype,
+            "low_cpu_mem_usage": True,
+        }
         try:
             import flash_attn  # noqa: F401
 
@@ -34,9 +37,15 @@ def resolve_model_load_config(device: torch.device, for_training: bool) -> Dict:
         return config
 
     if device.type == "mps":
-        return {"torch_dtype": torch.float16}
+        return {
+            "torch_dtype": torch.float16,
+            "low_cpu_mem_usage": True,
+        }
 
-    return {"torch_dtype": torch.float32}
+    return {
+        "torch_dtype": torch.float32,
+        "low_cpu_mem_usage": True,
+    }
 
 
 def resolve_model_path(model_path: str) -> str:
@@ -51,6 +60,9 @@ def load_qwen_vl(model_path: str, for_training: bool = False) -> Tuple:
     device = resolve_runtime()
     resolved_path = resolve_model_path(model_path)
     config = resolve_model_load_config(device, for_training=for_training)
+    if device.type == "cpu":
+        os.environ["HF_ENABLE_PARALLEL_LOADING"] = "false"
+        os.environ["HF_PARALLEL_LOADING_WORKERS"] = "1"
 
     model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
         resolved_path,

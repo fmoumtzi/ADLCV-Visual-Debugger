@@ -214,12 +214,19 @@ def resolve_model_load_config(device):
             "torch_dtype": dtype,
             "attn_implementation": attention,
             "device_map": "auto",
+            "low_cpu_mem_usage": True,
         }
 
     if device.type == "mps":
-        return {"torch_dtype": torch.float16}
+        return {
+            "torch_dtype": torch.float16,
+            "low_cpu_mem_usage": True,
+        }
 
-    return {"torch_dtype": torch.float32}
+    return {
+        "torch_dtype": torch.float32,
+        "low_cpu_mem_usage": True,
+    }
 
 
 def resolve_model_path(model_path):
@@ -232,6 +239,9 @@ def load_model(model_path):
     device = resolve_runtime()
     resolved_model_path = resolve_model_path(model_path)
     model_load_config = resolve_model_load_config(device)
+    if device.type == "cpu":
+        os.environ["HF_ENABLE_PARALLEL_LOADING"] = "false"
+        os.environ["HF_PARALLEL_LOADING_WORKERS"] = "1"
 
     print(f"Loading model: {resolved_model_path} on {device}")
     print(

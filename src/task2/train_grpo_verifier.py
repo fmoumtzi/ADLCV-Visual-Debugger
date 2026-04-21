@@ -385,10 +385,12 @@ def main():
         val_rows = filter_rows(train_all, split=args.val_split, require_labels=True)
 
     policy_model, processor, device, resolved = load_qwen_vl(args.model_path, for_training=True)
-    ref_model, _, _, _ = load_qwen_vl(args.model_path, for_training=False)
-    ref_model.eval()
-    for p in ref_model.parameters():
-        p.requires_grad = False
+    ref_model = None
+    if args.kl_coef > 0:
+        ref_model, _, _, _ = load_qwen_vl(args.model_path, for_training=False)
+        ref_model.eval()
+        for p in ref_model.parameters():
+            p.requires_grad = False
 
     print(f"Policy init checkpoint: {resolved}")
     print(f"Train rows: {len(train_rows)} | Val rows: {len(val_rows)}")
@@ -452,15 +454,18 @@ def main():
                         candidate_text=candidate_text,
                         requires_grad=True,
                     )
-                    lp_ref = compute_candidate_logprob(
-                        model=ref_model,
-                        processor=processor,
-                        device=device,
-                        image=image,
-                        prompt=prompt,
-                        candidate_text=candidate_text,
-                        requires_grad=False,
-                    )
+                    if ref_model is not None:
+                        lp_ref = compute_candidate_logprob(
+                            model=ref_model,
+                            processor=processor,
+                            device=device,
+                            image=image,
+                            prompt=prompt,
+                            candidate_text=candidate_text,
+                            requires_grad=False,
+                        )
+                    else:
+                        lp_ref = lp_policy.detach()
 
                     advantage_t = torch.tensor(advantage, device=device, dtype=lp_policy.dtype)
                     pg_loss = -(advantage_t * lp_policy)
