@@ -37,8 +37,8 @@ def parse_args():
     )
     parser.add_argument(
         "--auto_label_mode",
-        choices=["none", "target_overlap"],
-        default="none",
+        choices=["none", "target_overlap", "task1_copy"],
+        default="task1_copy",
         help="Weak-label mode if manual labels are unavailable.",
     )
     parser.add_argument(
@@ -122,6 +122,26 @@ def auto_label_target_overlap(claims: List[Dict], target_answer: str) -> List[Di
     return labels
 
 
+def parse_optional_bool(value: object) -> Optional[bool]:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return None
+    text = str(value).strip().lower()
+    if text in {"true", "1", "yes", "y"}:
+        return True
+    if text in {"false", "0", "no", "n"}:
+        return False
+    return None
+
+
+def auto_label_task1_copy(claims: List[Dict], hallucination: Optional[bool]) -> List[Dict]:
+    if hallucination is None:
+        return []
+    verdict = "HALLUCINATED" if hallucination else "CORRECT"
+    return [{"claim_id": claim["claim_id"], "verdict": verdict} for claim in claims]
+
+
 def standardize_row(row: Dict, max_claims: int) -> Dict:
     question = row.get("question", row.get("vqa_question", ""))
     model_response = row.get(
@@ -154,6 +174,7 @@ def standardize_row(row: Dict, max_claims: int) -> Dict:
         "answer_type": row.get("answer_type", ""),
         "question_type": row.get("question_type", ""),
         "model_response": model_response,
+        "hallucination": row.get("hallucination"),
         "claims": claims,
         "labels": row.get("labels", []),
     }
@@ -191,15 +212,23 @@ def main():
 
         if key in label_lookup:
             std["labels"] = label_lookup[key]
+        elif args.auto_label_mode == "task1_copy":
+            std["labels"] = auto_label_task1_copy(
+                std["claims"],
+                parse_optional_bool(row.get("hallucination")),
+            )
         elif args.auto_label_mode == "target_overlap":
             std["labels"] = auto_label_target_overlap(std["claims"], std.get("target_answer", ""))
 
-        std["split"] = assign_split(
-            key,
-            train_ratio=args.train_ratio,
-            val_ratio=args.val_ratio,
-            seed_key=args.seed_key,
-        )
+        if args.auto_label_mode == "task1_copy" and row.get("split"):
+            std["split"] = str(row.get("split"))
+        else:
+            std["split"] = assign_split(
+                key,
+                train_ratio=args.train_ratio,
+                val_ratio=args.val_ratio,
+                seed_key=args.seed_key,
+            )
 
         if not std.get("claims"):
             dropped += 1
