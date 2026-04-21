@@ -82,7 +82,7 @@ def filter_rows(rows: List[Dict], split: str, require_labels: bool = True) -> Li
     return filtered
 
 
-def build_prompt(row: Dict) -> Tuple[str, List[int], Dict[int, str]]:
+def build_prompt(row: Dict) -> Tuple[str, List[int], Dict[int, bool]]:
     claims = row.get("claims", [])
     claim_ids = [int(claim["claim_id"]) for claim in claims]
     gold = parse_label_entries(row.get("labels", []))
@@ -284,7 +284,7 @@ def run_validation(
                 "question_id": row.get("question_id"),
                 "question": row.get("question", ""),
                 "predictions": [
-                    {"claim_id": claim_id, "verdict": parsed[claim_id]}
+                    {"claim_id": claim_id, "hallucination": parsed[claim_id]}
                     for claim_id in claim_ids
                 ],
             }

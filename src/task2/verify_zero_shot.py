@@ -159,7 +159,7 @@ def main():
             top_p=args.top_p,
         )
         pred_map = parse_verifier_output(raw_output, expected_claim_ids=expected_claim_ids)
-        pred_list = [{"claim_id": cid, "verdict": pred_map[cid]} for cid in expected_claim_ids]
+        pred_list = [{"claim_id": cid, "hallucination": pred_map[cid]} for cid in expected_claim_ids]
 
         predictions.append(
             {
@@ -188,7 +188,7 @@ def main():
         json.dump(metrics, f, indent=2)
     print(f"Saved metrics JSON to {args.metrics_output_json}")
     print(
-        "Overall HALLUCINATED precision/recall/F1:",
+        "Overall hallucination=True precision/recall/F1:",
         f"{metrics['overall']['precision']:.4f}/"
         f"{metrics['overall']['recall']:.4f}/"
         f"{metrics['overall']['f1']:.4f}",

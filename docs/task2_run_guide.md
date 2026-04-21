@@ -38,7 +38,7 @@ python src/task2/prepare_verification_data.py \
 
 This writes rows with:
 - `claims` (sentence-level splits)
-- `labels` (`CORRECT` / `HALLUCINATED`)
+- `labels` (`hallucination: true/false` per claim)
 - deterministic split (`train` / `val` / `test`)
 
 ## 3) Zero-Shot Baseline
