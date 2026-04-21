@@ -3,7 +3,7 @@ import os
 import json
 import torch
 from tqdm import tqdm
-from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
+from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
 from qwen_vl_utils import process_vision_info
 
 def setup_experiment_dir(exp_name):
@@ -91,7 +91,7 @@ def load_model(model_name):
         attention_mech = "sdpa"
 
     # Load the model with the dynamic variables
-    model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+    model = Qwen2VLForConditionalGeneration.from_pretrained(
         local_model_path,
         torch_dtype=compute_dtype,
         attn_implementation=attention_mech,
