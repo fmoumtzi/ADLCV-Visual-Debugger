@@ -8,6 +8,7 @@ export HF_PARALLEL_LOADING_WORKERS="${HF_PARALLEL_LOADING_WORKERS:-1}"
 
 NUM_SAMPLES="${NUM_SAMPLES:-50}"
 SPLIT="${SPLIT:-val}"
+ZERO_SHOT_SPLIT="${ZERO_SHOT_SPLIT:-${SPLIT}}"
 MODEL_PATH="${MODEL_PATH:-models/Qwen2.5-VL-3B-Instruct}"
 TASK1_OUTPUT="${TASK1_OUTPUT:-results/task1_vqa/generations.jsonl}"
 TASK2_DATA="${TASK2_DATA:-results/task2/task2_verification_data.jsonl}"
@@ -21,7 +22,7 @@ GRPO_PREDS="${GRPO_PREDS:-results/task2/grpo_predictions.jsonl}"
 GRPO_METRICS="${GRPO_METRICS:-results/task2/metrics_grpo.json}"
 
 echo "Running simplified Task 2 pipeline"
-echo "split=${SPLIT} num_samples=${NUM_SAMPLES}"
+echo "split=${SPLIT} zero_shot_split=${ZERO_SHOT_SPLIT} num_samples=${NUM_SAMPLES}"
 
 python qwen_vl_vqa.py \
   --split "${SPLIT}" \
@@ -38,7 +39,7 @@ python src/task2/verify_zero_shot.py \
   --input_jsonl "${TASK2_DATA}" \
   --output_jsonl "${ZERO_SHOT_OUTPUT}" \
   --metrics_output_json "${ZERO_SHOT_METRICS}" \
-  --split test \
+  --split "${ZERO_SHOT_SPLIT}" \
   --slice_by_question_type \
   --model_path "${MODEL_PATH}"
 
