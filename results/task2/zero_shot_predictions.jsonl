@@ -1,0 +1,2 @@
+{"image_id": 393225, "question_id": 393225001, "question": "Is this a creamy soup?", "answer_type": "yes/no", "question_type": "is this a", "predictions": [{"claim_id": 0, "verdict": "CORRECT"}], "raw_output": "0VERDICT"}
+{"image_id": 393226, "question_id": 393226000, "question": "What is the man doing in the street?", "answer_type": "other", "question_type": "what is the man", "predictions": [{"claim_id": 0, "verdict": "CORRECT"}], "raw_output": "CORRECT"}

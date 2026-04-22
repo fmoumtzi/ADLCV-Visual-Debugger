@@ -3,10 +3,10 @@ from typing import Dict, Tuple
 
 import torch
 from PIL import Image
-from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
+from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
 
-MODEL_ID = "Qwen/Qwen2.5-VL-3B-Instruct"
-DEFAULT_LOCAL_MODEL_PATH = os.path.join("models", "Qwen2.5-VL-3B-Instruct")
+MODEL_ID = "Qwen/Qwen2-VL-2B-Instruct"
+DEFAULT_LOCAL_MODEL_PATH = os.path.join("models", "Qwen2-VL-2B-Instruct")
 
 
 def resolve_runtime() -> torch.device:
@@ -64,7 +64,7 @@ def load_qwen_vl(model_path: str, for_training: bool = False) -> Tuple:
         os.environ["HF_ENABLE_PARALLEL_LOADING"] = "false"
         os.environ["HF_PARALLEL_LOADING_WORKERS"] = "1"
 
-    model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+    model = Qwen2VLForConditionalGeneration.from_pretrained(
         resolved_path,
         **config,
     )

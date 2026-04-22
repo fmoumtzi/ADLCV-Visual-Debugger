@@ -5,11 +5,11 @@ import os
 import torch
 from PIL import Image
 from tqdm import tqdm
-from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
+from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
 
 
-MODEL_DIR = os.path.join("models", "Qwen2.5-VL-3B-Instruct")
-MODEL_ID = "Qwen/Qwen2.5-VL-3B-Instruct"
+MODEL_DIR = os.path.join("models", "Qwen2.5-VL-1.5B-Instruct")
+MODEL_ID = "Qwen/Qwen2.5-VL-1.5B-Instruct"
 MAX_NEW_TOKENS = 32
 SUPPORTED_SPLITS = {"train", "val"}
 
@@ -250,7 +250,7 @@ def load_model(model_path):
         f"attention={model_load_config.get('attn_implementation', 'default')}",
     )
 
-    model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+    model = Qwen2VLForConditionalGeneration.from_pretrained(
         resolved_model_path,
         **model_load_config,
     )

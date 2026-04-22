@@ -68,7 +68,7 @@ def parse_args():
         "--metrics_output_json",
         default="results/task2/metrics_sft.json",
     )
-    parser.add_argument("--model_path", default="models/Qwen2.5-VL-3B-Instruct")
+    parser.add_argument("--model_path", default="models/Qwen2-VL-2B-Instruct")
     parser.add_argument("--train_split", default="train")
     parser.add_argument("--val_split", default="val")
 

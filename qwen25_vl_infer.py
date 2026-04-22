@@ -88,7 +88,7 @@ def main():
         f"attention={model_load_config.get('attn_implementation', 'default')}",
     )
 
-    model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+    model = Qwen2VLForConditionalGeneration.from_pretrained(
         MODEL_ID,
         **model_load_config,
     )
