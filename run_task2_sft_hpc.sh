@@ -50,7 +50,20 @@ TASK2_DATA="${TASK2_DATA:-results/task2/task2_verification_data.jsonl}"
 SFT_OUTPUT_DIR="${SFT_OUTPUT_DIR:-results/task2/sft}"
 SFT_PREDS="${SFT_PREDS:-results/task2/sft_predictions.jsonl}"
 SFT_METRICS="${SFT_METRICS:-results/task2/metrics_sft.json}"
-MODEL_PATH="${MODEL_PATH:-models/Qwen2.5-VL-3B-Instruct}"
+MODEL_PATH="${MODEL_PATH:-models/Qwen2-VL-2B-Instruct}"
+WANDB_PROJECT="${WANDB_PROJECT:-}"
+WANDB_RUN_NAME="${WANDB_RUN_NAME:-sft-verifier-${LSB_JOBID:-local}}"
+
+if [ -n "${WANDB_PROJECT}" ]; then
+  if ! python -c "import wandb" >/dev/null 2>&1; then
+    echo "wandb is not installed in the active environment. Install requirements or pip install wandb."
+    exit 1
+  fi
+  if [ "${WANDB_MODE:-online}" != "offline" ] && [ -z "${WANDB_API_KEY:-}" ]; then
+    echo "WANDB_PROJECT is set but WANDB_API_KEY is empty. Set WANDB_API_KEY or run wandb login in this environment."
+    exit 1
+  fi
+fi
 
 python src/task2/train_sft_verifier.py \
   --train_jsonl "${TASK2_DATA}" \
@@ -61,4 +74,6 @@ python src/task2/train_sft_verifier.py \
   --epochs 1 \
   --batch_size 1 \
   --grad_accum_steps 1 \
-  --slice_by_question_type
+  --slice_by_question_type \
+  --wandb_project "${WANDB_PROJECT}" \
+  --wandb_run_name "${WANDB_RUN_NAME}"
