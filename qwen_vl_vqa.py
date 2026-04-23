@@ -8,8 +8,8 @@ from tqdm import tqdm
 from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
 
 
-MODEL_DIR = os.path.join("models", "Qwen2.5-VL-1.5B-Instruct")
-MODEL_ID = "Qwen/Qwen2.5-VL-1.5B-Instruct"
+MODEL_DIR = os.path.join("models", "Qwen/Qwen2-VL-2B-Instruct")
+MODEL_ID = "Qwen/Qwen2-VL-2B-Instruct"
 MAX_NEW_TOKENS = 32
 SUPPORTED_SPLITS = {"train", "val"}
 
@@ -17,7 +17,7 @@ SUPPORTED_SPLITS = {"train", "val"}
 def parse_args():
     parser = argparse.ArgumentParser(
         description=(
-            "Ask Qwen2.5-VL VQA v2 questions and save the VLM answers next to "
+            "Ask Qwen2-VL VQA v2 questions and save the VLM answers next to "
             "the target multiple_choice_answer annotations."
         )
     )

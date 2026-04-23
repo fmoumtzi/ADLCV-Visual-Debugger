@@ -89,6 +89,12 @@ def parse_args():
     parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("--wandb_project", default="")
     parser.add_argument("--wandb_run_name", default="")
+    parser.add_argument("--use_lora", action="store_true")
+    #LORA
+    parser.add_argument("--use_4bit", action="store_true")
+    parser.add_argument("--lora_r", type=int, default=8)
+    parser.add_argument("--lora_alpha", type=int, default=16)
+    parser.add_argument("--lora_dropout", type=float, default=0.05)
     return parser.parse_args()
 
 
@@ -355,6 +361,11 @@ def main():
     model, processor, device, resolved_model_path = load_qwen_vl(
         args.model_path,
         for_training=True,
+        use_lora=args.use_lora,
+        use_4bit=args.use_4bit,
+        lora_r=args.lora_r,
+        lora_alpha=args.lora_alpha,
+        lora_dropout=args.lora_dropout,
     )
     print(f"Loaded base model from {resolved_model_path} on {device}")
     print(f"Train samples: {len(train_rows)} | Validation samples: {len(val_rows)}")

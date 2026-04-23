@@ -80,8 +80,10 @@ def build_verification_prompt(
     ]
     if choices_block:
         pieces.append(f"Options (if applicable):\n{choices_block}")
-    if target_answer:
-        pieces.append(f"Reference answer: {target_answer}")
+    #if target_answer:
+        # don't include target answer in prompt
+        #pieces.append(f"Reference answer: {target_answer}")
+        
     pieces.extend([
         f"Prior model response: {prior_response}",
         f"Claims to verify:\n{claims_block}",

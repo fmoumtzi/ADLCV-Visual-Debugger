@@ -65,6 +65,13 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--wandb_project", default="")
     parser.add_argument("--wandb_run_name", default="")
+
+    #LORA
+    parser.add_argument("--use_lora", action="store_true")
+    parser.add_argument("--use_4bit", action="store_true")
+    parser.add_argument("--lora_r", type=int, default=8)
+    parser.add_argument("--lora_alpha", type=int, default=16)
+    parser.add_argument("--lora_dropout", type=float, default=0.05)
     return parser.parse_args()
 
 
@@ -384,10 +391,26 @@ def main():
     else:
         val_rows = filter_rows(train_all, split=args.val_split, require_labels=True)
 
-    policy_model, processor, device, resolved = load_qwen_vl(args.model_path, for_training=True)
+    policy_model, processor, device, resolved = load_qwen_vl(
+        args.model_path,
+        for_training=True,
+        use_lora=args.use_lora,
+        use_4bit=args.use_4bit,
+        lora_r=args.lora_r,
+        lora_alpha=args.lora_alpha,
+        lora_dropout=args.lora_dropout,
+    )
     ref_model = None
     if args.kl_coef > 0:
-        ref_model, _, _, _ = load_qwen_vl(args.model_path, for_training=False)
+        ref_model, _, _, _ = load_qwen_vl(
+            args.model_path,
+            for_training=False,
+            use_lora=args.use_lora,
+            use_4bit=args.use_4bit,
+            lora_r=args.lora_r,
+            lora_alpha=args.lora_alpha,
+            lora_dropout=args.lora_dropout,
+        )
         ref_model.eval()
         for p in ref_model.parameters():
             p.requires_grad = False
