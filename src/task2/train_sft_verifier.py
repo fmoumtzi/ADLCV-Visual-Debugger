@@ -300,6 +300,30 @@ def evaluate_checkpoint(
     return metrics, preds
 
 
+def compute_validation_loss(model, val_loader, device) -> Optional[float]:
+    if val_loader is None:
+        return None
+
+    model.eval()
+    total_loss = 0.0
+    total_tokens = 0
+
+    with torch.inference_mode():
+        for batch in tqdm(val_loader, desc="Validation loss", leave=False):
+            batch = {k: v.to(device) for k, v in batch.items()}
+            outputs = model(**batch)
+            valid_tokens = int((batch["labels"] != -100).sum().item())
+            if valid_tokens <= 0:
+                continue
+            total_loss += float(outputs.loss.detach().cpu().item()) * valid_tokens
+            total_tokens += valid_tokens
+
+    model.train()
+    if total_tokens == 0:
+        return None
+    return total_loss / total_tokens
+
+
 def maybe_init_wandb(args, train_cfg: TrainConfig):
     if not args.wandb_project:
         return None
@@ -370,13 +394,24 @@ def main():
     print(f"Loaded base model from {resolved_model_path} on {device}")
     print(f"Train samples: {len(train_rows)} | Validation samples: {len(val_rows)}")
 
+    collate_fn = build_collate_fn(processor)
     train_loader = DataLoader(
         Task2Dataset(train_rows),
         batch_size=train_cfg.batch_size,
         shuffle=True,
         num_workers=args.num_workers,
-        collate_fn=build_collate_fn(processor),
+        collate_fn=collate_fn,
     )
+    val_rows_for_eval = val_rows[: args.eval_max_samples] if args.eval_max_samples > 0 else val_rows
+    val_loader = None
+    if val_rows_for_eval:
+        val_loader = DataLoader(
+            Task2Dataset(val_rows_for_eval),
+            batch_size=train_cfg.batch_size,
+            shuffle=False,
+            num_workers=args.num_workers,
+            collate_fn=collate_fn,
+        )
 
     steps_per_epoch = math.ceil(len(train_loader) / max(train_cfg.grad_accum_steps, 1))
     total_steps = max(steps_per_epoch * train_cfg.epochs, 1)
@@ -438,6 +473,13 @@ def main():
         val_metrics = {}
         val_preds = []
         if val_rows:
+            val_loss = compute_validation_loss(
+                model=model,
+                val_loader=val_loader,
+                device=device,
+            )
+            if val_loss is not None:
+                record["val_loss"] = val_loss
             val_metrics, val_preds = evaluate_checkpoint(
                 model=model,
                 processor=processor,
@@ -478,15 +520,19 @@ def main():
                     json.dump(val_metrics, f, indent=2)
                 write_jsonl(os.path.join(epoch_dir, "predictions.jsonl"), val_preds)
 
-        print(
-            f"Epoch {epoch}: train_loss={avg_train_loss:.4f}",
-            (
-                f", val_p/r/f1={record['val_precision']:.4f}/"
-                f"{record['val_recall']:.4f}/{record['val_f1']:.4f}"
-                if "val_f1" in record
-                else ""
-            ),
-        )
+        val_report = ""
+        if "val_f1" in record:
+            if "val_loss" in record:
+                val_report = (
+                    f", val_loss={record['val_loss']:.4f}, val_p/r/f1={record['val_precision']:.4f}/"
+                    f"{record['val_recall']:.4f}/{record['val_f1']:.4f}"
+                )
+            else:
+                val_report = (
+                    f", val_p/r/f1={record['val_precision']:.4f}/"
+                    f"{record['val_recall']:.4f}/{record['val_f1']:.4f}"
+                )
+        print(f"Epoch {epoch}: train_loss={avg_train_loss:.4f}{val_report}")
 
         if wb_run is not None:
             wandb.log(record)
