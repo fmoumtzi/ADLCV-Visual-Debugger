@@ -2,7 +2,7 @@ import argparse
 import json
 import os
 import random
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import torch
 from torch.optim import AdamW
@@ -16,13 +16,13 @@ except ImportError:  # pragma: no cover
 try:
     from .evaluate_verifier import evaluate_rows
     from .io_utils import ensure_parent_dir, parse_label_entries, read_jsonl, write_jsonl
-    from .prompts import build_verification_prompt, parse_verifier_output
+    from .prompts import build_verification_prompt, format_target_labels, parse_verifier_output
     from .reward import relative_group_advantages, score_predictions
     from .runtime import load_qwen_vl, open_rgb
 except ImportError:
     from evaluate_verifier import evaluate_rows
     from io_utils import ensure_parent_dir, parse_label_entries, read_jsonl, write_jsonl
-    from prompts import build_verification_prompt, parse_verifier_output
+    from prompts import build_verification_prompt, format_target_labels, parse_verifier_output
     from reward import relative_group_advantages, score_predictions
     from runtime import load_qwen_vl, open_rgb
 
@@ -306,6 +306,86 @@ def run_validation(
     return metrics, preds
 
 
+def compute_validation_loss(
+    model,
+    processor,
+    device,
+    val_rows: List[Dict],
+    limit: int,
+) -> Optional[float]:
+    if not val_rows:
+        return None
+
+    subset = val_rows[:limit] if limit > 0 else val_rows
+    total_loss = 0.0
+    total_tokens = 0
+
+    model.eval()
+    with torch.inference_mode():
+        for row in tqdm(subset, desc="GRPO val loss", leave=False):
+            target = format_target_labels(row.get("labels", []))
+            if not target:
+                continue
+
+            prompt, _, _ = build_prompt(row)
+            image = open_rgb(row["image_path"])
+            try:
+                user_messages = [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "image", "image": image},
+                            {"type": "text", "text": prompt},
+                        ],
+                    }
+                ]
+                full_messages = user_messages + [{"role": "assistant", "content": target}]
+
+                prompt_text = processor.apply_chat_template(
+                    user_messages,
+                    tokenize=False,
+                    add_generation_prompt=True,
+                )
+                full_text = processor.apply_chat_template(
+                    full_messages,
+                    tokenize=False,
+                    add_generation_prompt=False,
+                )
+
+                prompt_inputs = processor(
+                    text=[prompt_text],
+                    images=[image],
+                    padding=True,
+                    return_tensors="pt",
+                ).to(device)
+                full_inputs = processor(
+                    text=[full_text],
+                    images=[image],
+                    padding=True,
+                    return_tensors="pt",
+                ).to(device)
+
+                labels = full_inputs["input_ids"].clone()
+                prompt_len = int(prompt_inputs["attention_mask"].sum().item())
+                labels[:, :prompt_len] = -100
+                labels[full_inputs["attention_mask"] == 0] = -100
+
+                valid_tokens = int((labels != -100).sum().item())
+                if valid_tokens <= 0:
+                    continue
+
+                outputs = model(**full_inputs, labels=labels)
+                total_loss += float(outputs.loss.detach().cpu().item()) * valid_tokens
+                total_tokens += valid_tokens
+            finally:
+                image.close()
+
+    model.train()
+    if total_tokens == 0:
+        return None
+    return total_loss / total_tokens
+
+
 def maybe_eval_and_save(
     args,
     policy_model,
@@ -319,6 +399,13 @@ def maybe_eval_and_save(
     if not val_rows:
         return best
 
+    val_loss = compute_validation_loss(
+        model=policy_model,
+        processor=processor,
+        device=device,
+        val_rows=val_rows,
+        limit=args.eval_max_samples,
+    )
     metrics, preds = run_validation(
         model=policy_model,
         processor=processor,
@@ -329,18 +416,25 @@ def maybe_eval_and_save(
         include_question_type=args.slice_by_question_type,
     )
     f1 = metrics["overall"]["f1"]
-    curve.append(
-        {
-            "step": global_step,
-            "val_precision": metrics["overall"]["precision"],
-            "val_recall": metrics["overall"]["recall"],
-            "val_f1": f1,
-        }
-    )
-    print(
-        f"Step {global_step}: val_p/r/f1={metrics['overall']['precision']:.4f}/"
-        f"{metrics['overall']['recall']:.4f}/{f1:.4f}"
-    )
+    curve_entry = {
+        "step": global_step,
+        "val_precision": metrics["overall"]["precision"],
+        "val_recall": metrics["overall"]["recall"],
+        "val_f1": f1,
+    }
+    if val_loss is not None:
+        curve_entry["val_loss"] = val_loss
+    curve.append(curve_entry)
+    if val_loss is not None:
+        print(
+            f"Step {global_step}: val_loss={val_loss:.4f}, val_p/r/f1={metrics['overall']['precision']:.4f}/"
+            f"{metrics['overall']['recall']:.4f}/{f1:.4f}"
+        )
+    else:
+        print(
+            f"Step {global_step}: val_p/r/f1={metrics['overall']['precision']:.4f}/"
+            f"{metrics['overall']['recall']:.4f}/{f1:.4f}"
+        )
 
     if f1 > best["f1"]:
         best["f1"] = f1
@@ -534,14 +628,15 @@ def main():
                             best=best,
                         )
                         if wb_run is not None and curve:
-                            wandb.log(
-                                {
-                                    "eval/precision": curve[-1]["val_precision"],
-                                    "eval/recall": curve[-1]["val_recall"],
-                                    "eval/f1": curve[-1]["val_f1"],
-                                    "step": global_step,
-                                }
-                            )
+                            eval_record = {
+                                "eval/precision": curve[-1]["val_precision"],
+                                "eval/recall": curve[-1]["val_recall"],
+                                "eval/f1": curve[-1]["val_f1"],
+                                "step": global_step,
+                            }
+                            if "val_loss" in curve[-1]:
+                                eval_record["eval/loss"] = curve[-1]["val_loss"]
+                            wandb.log(eval_record)
             finally:
                 image.close()
 
@@ -555,6 +650,16 @@ def main():
         global_step=global_step,
         best=best,
     )
+    if wb_run is not None and curve:
+        final_eval_record = {
+            "eval/precision": curve[-1]["val_precision"],
+            "eval/recall": curve[-1]["val_recall"],
+            "eval/f1": curve[-1]["val_f1"],
+            "step": global_step,
+        }
+        if "val_loss" in curve[-1]:
+            final_eval_record["eval/loss"] = curve[-1]["val_loss"]
+        wandb.log(final_eval_record)
 
     final_dir = os.path.join(args.output_dir, "final_checkpoint")
     os.makedirs(final_dir, exist_ok=True)
