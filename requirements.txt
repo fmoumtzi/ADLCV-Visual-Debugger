@@ -7,6 +7,10 @@ qwen-vl-utils
 tqdm
 pillow
 pyyaml
+datasets
+trl[peft]>=0.22.0
+bitsandbytes
+num2words==0.5.14
 
 # Optional experiment tracking used by the training scripts when enabled
 wandb
