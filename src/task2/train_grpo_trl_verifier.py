@@ -28,6 +28,7 @@ def parse_args():
     parser.add_argument("--model_path", default="")
     parser.add_argument("--train_split", default="train")
     parser.add_argument("--val_split", default="val")
+    parser.add_argument("--min_claims", type=int, default=1)
 
     parser.add_argument("--num_train_epochs", type=float, default=1.0)
     parser.add_argument("--max_steps", type=int, default=-1)
@@ -41,6 +42,8 @@ def parse_args():
     parser.add_argument("--beta", type=float, default=0.0)
     parser.add_argument("--epsilon", type=float, default=0.2)
     parser.add_argument("--loss_type", default="dapo")
+    parser.add_argument("--format_reward_weight", type=float, default=0.2)
+    parser.add_argument("--format_instruction", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--max_grad_norm", type=float, default=1.0)
     parser.add_argument("--warmup_ratio", type=float, default=0.03)
     parser.add_argument("--logging_steps", type=int, default=5)
@@ -87,7 +90,17 @@ def disable_vllm_import() -> None:
     sys.modules.setdefault("vllm", None)
 
 
-def build_dataset(jsonl_path: str, split: str):
+def add_format_example(prompt: str) -> str:
+    return (
+        f"{prompt}\n\n"
+        "Example output:\n"
+        "0\tFALSE\n"
+        "1\tTRUE\n\n"
+        "Now output only the verification lines for the actual claims above."
+    )
+
+
+def build_dataset(jsonl_path: str, split: str, min_claims: int, use_format_instruction: bool):
     from datasets import Dataset, Image
 
     rows = []
@@ -97,7 +110,7 @@ def build_dataset(jsonl_path: str, split: str):
         gold = parse_label_entries(row.get("labels", []))
         claims = row.get("claims", [])
         claim_ids = [int(claim["claim_id"]) for claim in claims if int(claim["claim_id"]) in gold]
-        if not claim_ids:
+        if len(claim_ids) < min_claims:
             continue
 
         prompt = build_verification_prompt(
@@ -107,6 +120,8 @@ def build_dataset(jsonl_path: str, split: str):
             choices=row.get("choices", []),
             target_answer=row.get("target_answer", ""),
         )
+        if use_format_instruction:
+            prompt = add_format_example(prompt)
         rows.append(
             {
                 "prompt": [{"role": "user", "content": prompt}],
@@ -157,6 +172,21 @@ def claim_reward(completions, claim_ids, gold_hallucinations, **kwargs):
     return rewards
 
 
+def combined_reward(completions, claim_ids, gold_hallucinations, format_reward_weight=0.2, **kwargs):
+    rewards = []
+    for completion, ids, golds in zip(completions, claim_ids, gold_hallucinations):
+        pred = parse_completion(completion_to_text(completion))
+        matched = sum(1 for claim_id in ids if claim_id in pred)
+        format_score = matched / max(len(ids), 1)
+        claim_scores = [
+            1.0 if claim_id in pred and bool(pred[claim_id]) == bool(gold) else -1.0
+            for claim_id, gold in zip(ids, golds)
+        ]
+        claim_score = sum(claim_scores) / max(len(claim_scores), 1)
+        rewards.append(claim_score + format_reward_weight * format_score)
+    return rewards
+
+
 def main():
     args = parse_args()
     if not args.allow_vllm_import:
@@ -167,8 +197,22 @@ def main():
     from trl import GRPOConfig, GRPOTrainer
 
     model_path = resolve_model_path(args.model, args.model_path)
-    train_dataset = build_dataset(args.train_jsonl, args.train_split)
-    eval_dataset = build_dataset(args.train_jsonl, args.val_split) if args.eval_steps > 0 else None
+    train_dataset = build_dataset(
+        args.train_jsonl,
+        args.train_split,
+        min_claims=args.min_claims,
+        use_format_instruction=args.format_instruction,
+    )
+    eval_dataset = (
+        build_dataset(
+            args.train_jsonl,
+            args.val_split,
+            min_claims=1,
+            use_format_instruction=args.format_instruction,
+        )
+        if args.eval_steps > 0
+        else None
+    )
     if train_dataset is None:
         raise RuntimeError(f"No labeled rows found for split={args.train_split!r}.")
 
@@ -240,12 +284,20 @@ def main():
         bias="none",
         target_modules=[x.strip() for x in args.lora_target_modules.split(",") if x.strip()],
     )
+    def reward_func(completions, claim_ids, gold_hallucinations, **kwargs):
+        return combined_reward(
+            completions,
+            claim_ids,
+            gold_hallucinations,
+            format_reward_weight=args.format_reward_weight,
+            **kwargs,
+        )
 
     trainer = GRPOTrainer(
         model=model_path,
         args=grpo_args,
         processing_class=processor,
-        reward_funcs=claim_reward,
+        reward_funcs=reward_func,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
         peft_config=peft_config,
