@@ -105,6 +105,7 @@ def load_qwen_vl(
     if use_4bit:
         if device.type != "cuda":
             raise RuntimeError("4-bit loading is only recommended on CUDA.")
+
         from transformers import BitsAndBytesConfig
 
         compute_dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
@@ -117,56 +118,73 @@ def load_qwen_vl(
             bnb_4bit_compute_dtype=compute_dtype,
         )
 
-    model = Qwen2VLForConditionalGeneration.from_pretrained(
-        resolved_path,
-        **load_kwargs,
-    )
+    adapter_config_path = os.path.join(resolved_path, "adapter_config.json")
 
-    processor = AutoProcessor.from_pretrained(resolved_path)
-    if processor.tokenizer.pad_token_id is None:
-        processor.tokenizer.pad_token = processor.tokenizer.eos_token
+    if use_lora and os.path.exists(adapter_config_path):
+        # CASE 1: loading an existing LoRA checkpoint, e.g. SFT -> GRPO
+        from peft import PeftConfig, PeftModel
 
-    if use_lora:
-        from peft import LoraConfig, get_peft_model
+        print(f"Loading LoRA adapter checkpoint from: {resolved_path}")
 
-        if use_4bit:
-            from peft import prepare_model_for_kbit_training
-            model = prepare_model_for_kbit_training(model)
+        peft_config = PeftConfig.from_pretrained(resolved_path)
+        base_model_path = peft_config.base_model_name_or_path
 
-        model.gradient_checkpointing_enable()
-        model.enable_input_require_grads()
-
-        peft_config = LoraConfig(
-            r=lora_r,
-            lora_alpha=lora_alpha,
-            lora_dropout=lora_dropout,
-            bias="none",
-            task_type="CAUSAL_LM",
-            target_modules=[
-                "q_proj",
-                "k_proj",
-                "v_proj",
-                "o_proj",
-                "gate_proj",
-                "up_proj",
-                "down_proj",
-            ],
+        model = Qwen2VLForConditionalGeneration.from_pretrained(
+            base_model_path,
+            **load_kwargs,
         )
 
-        model = get_peft_model(model, peft_config)
+        model = PeftModel.from_pretrained(
+            model,
+            resolved_path,
+            is_trainable=for_training,
+        )
 
-        # IMPORTANT: move to device unless using device_map
-        if "device_map" not in load_kwargs:
-            model.to(device)
+        processor = AutoProcessor.from_pretrained(base_model_path)
 
-        model.train(mode=for_training)
-        if not for_training:
-            model.eval()
+    else:
+        # CASE 2: loading normal base model
+        model = Qwen2VLForConditionalGeneration.from_pretrained(
+            resolved_path,
+            **load_kwargs,
+        )
 
-        if hasattr(model, "print_trainable_parameters"):
-            model.print_trainable_parameters()
+        processor = AutoProcessor.from_pretrained(resolved_path)
 
-        return model, processor, device, resolved_path
+        if use_lora:
+            # Fresh LoRA adapters, e.g. base -> SFT
+            from peft import LoraConfig, get_peft_model
+
+            print("Initializing fresh LoRA adapters")
+
+            if use_4bit:
+                from peft import prepare_model_for_kbit_training
+                model = prepare_model_for_kbit_training(model)
+
+            model.gradient_checkpointing_enable()
+            model.enable_input_require_grads()
+
+            peft_config = LoraConfig(
+                r=lora_r,
+                lora_alpha=lora_alpha,
+                lora_dropout=lora_dropout,
+                bias="none",
+                task_type="CAUSAL_LM",
+                target_modules=[
+                    "q_proj",
+                    "k_proj",
+                    "v_proj",
+                    "o_proj",
+                    "gate_proj",
+                    "up_proj",
+                    "down_proj",
+                ],
+            )
+
+            model = get_peft_model(model, peft_config)
+
+    if processor.tokenizer.pad_token_id is None:
+        processor.tokenizer.pad_token = processor.tokenizer.eos_token
 
     if "device_map" not in load_kwargs:
         model.to(device)
@@ -174,6 +192,9 @@ def load_qwen_vl(
     model.train(mode=for_training)
     if not for_training:
         model.eval()
+
+    if use_lora and hasattr(model, "print_trainable_parameters"):
+        model.print_trainable_parameters()
 
     return model, processor, device, resolved_path
 

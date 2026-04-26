@@ -137,7 +137,11 @@ def generate_candidate_texts(
         "do_sample": True,
         "temperature": temperature,
         "top_p": top_p,
+        "top_k": 50
     }
+    was_training = model.training
+    model.eval()
+
     with torch.inference_mode():
         for _ in range(num_candidates):
             generated_ids = model.generate(**inputs, **generation_kwargs)
@@ -150,6 +154,8 @@ def generate_candidate_texts(
                 clean_up_tokenization_spaces=False,
             )[0].strip()
             outputs.append(text)
+    if was_training:
+        model.train()
     return outputs
 
 
