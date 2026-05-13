@@ -5,8 +5,8 @@ BOOL_LABELS = {"TRUE", "FALSE"}
 
 
 def normalize_hallucination_label(value: object) -> Optional[bool]:
-    if not value:
-        return None
+    if isinstance(value, bool):
+        return value
     text = str(value).strip().upper()
     alias_map = {
         "HALLUCINATED": True,
@@ -74,7 +74,7 @@ def build_verification_prompt(
     pieces = [
         "You are verifying a previous visual answer claim-by-claim.",
         "For each claim_id, output hallucination as TRUE or FALSE.",
-        "Output format: one line per claim, exactly `claim_id<TAB>TRUE_OR_FALSE`.",
+        "Output exactly one line per claim: claim_id, a tab, then TRUE or FALSE.",
         "Do not output extra text.",
         f"Question: {question}",
     ]
@@ -89,6 +89,59 @@ def build_verification_prompt(
         f"Claims to verify:\n{claims_block}",
     ])
     return "\n\n".join(pieces)
+
+def build_reasoned_verification_prompt(
+    question: str,
+    prior_response: str,
+    claims,
+    choices=None,
+    target_answer: str = "",
+) -> str:
+    choices = choices or []
+    choices_block = "\n".join(f"- {choice}" for choice in choices)
+    claims_block = format_claims(claims)
+
+    pieces = [
+        "You are verifying a previous visual answer using the image.",
+        "First write a short reasoning sentence based only on the image and question.",
+        "Then output the final hallucination verdict.",
+        "Use exactly this format:",
+        "Reasoning: <one short sentence>",
+        "Verdict: <claim_id> TRUE_OR_FALSE",
+        "",
+        "TRUE means the claim is hallucinated or unsupported by the image.",
+        "FALSE means the claim is correct/supported by the image.",
+        f"Question: {question}",
+    ]
+
+    if choices_block:
+        pieces.append(f"Options:\n{choices_block}")
+
+    pieces.extend([
+        f"Prior model response: {prior_response}",
+        f"Claims to verify:\n{claims_block}",
+    ])
+
+    return "\n\n".join(pieces)
+
+def format_reasoned_target_verdict_only(labels) -> str:
+    ordered = sorted(labels, key=lambda x: int(x["claim_id"]))
+    lines = ["Reasoning:"]
+    for row in ordered:
+        value = normalize_hallucination_label(row.get("hallucination"))
+        if value is None:
+            continue
+        lines.append(f"Verdict: {int(row['claim_id'])} {'TRUE' if value else 'FALSE'}")
+    return "\n".join(lines)
+
+def add_verification_format_example(prompt: str) -> str:
+    return (
+        f"{prompt}\n\n"
+        "Example output:\n"
+        "0\tFALSE\n"
+        "1\tTRUE\n\n"
+        "Now output only the verification lines for the actual claims above."
+    )
 
 
 def parse_verifier_output(raw_text: str, expected_claim_ids: List[int]) -> Dict[int, bool]:
@@ -107,10 +160,12 @@ def parse_verifier_output(raw_text: str, expected_claim_ids: List[int]) -> Dict[
     if len(predictions) < len(expected_claim_ids):
         bool_hits = []
         for line in lines:
-            line_norm = line.upper()
-            if "TRUE" in line_norm or "HALLUCINATED" in line_norm:
+            line_norm = line.strip().upper()
+            if "TRUE_OR_FALSE" in line_norm or "FALSE_OR_TRUE" in line_norm:
+                continue
+            if re.fullmatch(r"(?:\d+\s*)?(?:TRUE|HALLUCINATED|UNSUPPORTED|INCORRECT|WRONG)", line_norm):
                 bool_hits.append(True)
-            elif "FALSE" in line_norm or "CORRECT" in line_norm:
+            elif re.fullmatch(r"(?:\d+\s*)?(?:FALSE|CORRECT|SUPPORTED)", line_norm):
                 bool_hits.append(False)
 
         for idx, claim_id in enumerate(expected_claim_ids):

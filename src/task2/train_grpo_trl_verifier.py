@@ -63,6 +63,9 @@ def parse_args():
     parser.add_argument("--wandb_run_name", default="")
     parser.add_argument("--log_completions", action="store_true")
     parser.add_argument("--allow_vllm_import", action="store_true")
+    #start from lora checkpoint
+    parser.add_argument("--lora_checkpoint", default="")
+    parser.add_argument("--resume_from_checkpoint", default="")
     return parser.parse_args()
 
 
@@ -124,7 +127,15 @@ def build_dataset(jsonl_path: str, split: str, min_claims: int, use_format_instr
             prompt = add_format_example(prompt)
         rows.append(
             {
-                "prompt": [{"role": "user", "content": prompt}],
+                "prompt": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "image"},
+                            {"type": "text", "text": prompt},
+                        ],
+                    }
+                ],
                 "image": row["image_path"],
                 "claim_ids": claim_ids,
                 "gold_hallucinations": [bool(gold[claim_id]) for claim_id in claim_ids],
@@ -179,21 +190,20 @@ def combined_reward(completions, claim_ids, gold_hallucinations, format_reward_w
         matched = sum(1 for claim_id in ids if claim_id in pred)
         format_score = matched / max(len(ids), 1)
         claim_scores = [
-            1.0 if claim_id in pred and bool(pred[claim_id]) == bool(gold) else -1.0
+            1.5 if claim_id in pred and bool(pred[claim_id]) == bool(gold) else -1.0
             for claim_id, gold in zip(ids, golds)
         ]
         claim_score = sum(claim_scores) / max(len(claim_scores), 1)
         rewards.append(claim_score + format_reward_weight * format_score)
     return rewards
 
-
 def main():
     args = parse_args()
     if not args.allow_vllm_import:
         disable_vllm_import()
 
-    from peft import LoraConfig
-    from transformers import AutoProcessor, BitsAndBytesConfig
+    from peft import LoraConfig, PeftModel, prepare_model_for_kbit_training
+    from transformers import AutoProcessor, BitsAndBytesConfig, AutoModelForImageTextToText
     from trl import GRPOConfig, GRPOTrainer
 
     model_path = resolve_model_path(args.model, args.model_path)
@@ -293,16 +303,44 @@ def main():
             **kwargs,
         )
 
+    model_for_trainer = model_path
+    peft_config_for_trainer = peft_config
+
+    if args.lora_checkpoint:
+        print(f"Loading base model from: {model_path}")
+        base_model = AutoModelForImageTextToText.from_pretrained(
+            model_path,
+            **model_init_kwargs,
+        )
+
+        if args.use_4bit:
+            base_model = prepare_model_for_kbit_training(base_model)
+
+        print(f"Loading trainable LoRA adapter from: {args.lora_checkpoint}")
+        model_for_trainer = PeftModel.from_pretrained(
+            base_model,
+            args.lora_checkpoint,
+            is_trainable=True,
+        )
+
+        model_for_trainer.print_trainable_parameters()
+
+        # Important: do not pass a fresh LoraConfig when loading an existing adapter
+        peft_config_for_trainer = None
+
     trainer = GRPOTrainer(
-        model=model_path,
+        model=model_for_trainer,
         args=grpo_args,
         processing_class=processor,
         reward_funcs=reward_func,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
-        peft_config=peft_config,
+        peft_config=peft_config_for_trainer,
     )
-    trainer.train()
+
+    trainer.train(
+        resume_from_checkpoint=args.resume_from_checkpoint or None
+    )
     trainer.save_model(args.output_dir)
 
 

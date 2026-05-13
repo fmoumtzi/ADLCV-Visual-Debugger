@@ -37,9 +37,9 @@ python -c "import torch; print('bf16 supported:', torch.cuda.is_bf16_supported()
 nvidia-smi || true
 
 python src/task2/train_grpo_verifier.py \
-  --train_jsonl results/task2/task2_verification_data.jsonl \
-  --output_dir results/task2/grpo_lora_run1 \
-  --model_path /dtu/blackhole/12/223890/ADLCV-Visual-Debugger/results/task2/sft_lora_run1/best_checkpoint \
+  --train_jsonl results/task2/alex_converted_data_qwen_balanced.jsonl \
+  --output_dir results/task2/grpo_lora_balanced1 \
+  --model_path /dtu/blackhole/12/223890/ADLCV-Visual-Debugger/results/task2/sft_lora_balanced_1/checkpoint_epoch_2 \
   --epochs 10 \
   --learning_rate 2e-6 \
   --grad_accum_steps 4 \

@@ -20,11 +20,6 @@ except ImportError:  # pragma: no cover
 try:
     from .evaluate_verifier import evaluate_rows
     from .io_utils import ensure_parent_dir, read_jsonl, write_jsonl
-    from .prompts import (
-        build_verification_prompt,
-        format_target_labels,
-        parse_verifier_output,
-    )
     from .runtime import load_qwen_vl, open_rgb
 except ImportError:
     from evaluate_verifier import evaluate_rows
@@ -32,6 +27,7 @@ except ImportError:
     from prompts import build_verification_prompt, format_target_labels, parse_verifier_output
     from runtime import load_qwen_vl, open_rgb
 
+DEBUG = False
 
 @dataclass
 class TrainConfig:
@@ -129,13 +125,14 @@ def build_text_pair(row: Dict) -> Dict[str, str]:
 def build_collate_fn(processor):
     def collate(batch_rows: List[Dict]) -> Dict[str, torch.Tensor]:
         images = []
-        prompt_texts = []
         full_texts = []
+        target_texts = []
 
         for row in batch_rows:
             pair = build_text_pair(row)
             image = open_rgb(row["image_path"])
             images.append(image)
+            target_texts.append(pair["target"])
 
             user_msg = [
                 {
@@ -146,22 +143,19 @@ def build_collate_fn(processor):
                     ],
                 }
             ]
-            full_msgs = user_msg + [{"role": "assistant", "content": pair["target"]}]
+            full_msgs = user_msg + [
+                {"role": "assistant", "content": pair["target"]}
+            ]
 
-            prompt_texts.append(
-                processor.apply_chat_template(user_msg, tokenize=False, add_generation_prompt=True)
-            )
             full_texts.append(
-                processor.apply_chat_template(full_msgs, tokenize=False, add_generation_prompt=False)
+                processor.apply_chat_template(
+                    full_msgs,
+                    tokenize=False,
+                    add_generation_prompt=False,
+                )
             )
 
         try:
-            prompt_enc = processor(
-                text=prompt_texts,
-                images=images,
-                padding=True,
-                return_tensors="pt",
-            )
             full_enc = processor(
                 text=full_texts,
                 images=images,
@@ -172,20 +166,53 @@ def build_collate_fn(processor):
             for image in images:
                 image.close()
 
-        prompt_lengths = prompt_enc["attention_mask"].sum(dim=1)
         labels = full_enc["input_ids"].clone()
+
+        assistant_prefix = "<|im_start|>assistant\n"
+        assistant_prefix_ids = processor.tokenizer(
+            assistant_prefix,
+            add_special_tokens=False,
+            return_tensors="pt",
+        )["input_ids"][0]
+
         for i in range(labels.shape[0]):
-            labels[i, : int(prompt_lengths[i].item())] = -100
+            input_ids = full_enc["input_ids"][i]
+            seq_len = int(full_enc["attention_mask"][i].sum().item())
+
+            target_start = None
+
+            # Search only inside the real sequence, not padding
+            for j in range(0, seq_len - assistant_prefix_ids.shape[0] + 1):
+                if torch.equal(
+                    input_ids[j : j + assistant_prefix_ids.shape[0]].cpu(),
+                    assistant_prefix_ids.cpu(),
+                ):
+                    # Keep updating so we get the LAST assistant marker
+                    target_start = j + assistant_prefix_ids.shape[0]
+
+            if target_start is None:
+                raise RuntimeError(
+                    "Could not find assistant start marker in full text:\n"
+                    + full_texts[i]
+                )
+
+            labels[i, :target_start] = -100
+
         labels[full_enc["attention_mask"] == 0] = -100
+
+        # Debug: check what the model is actually trained on
+        non_masked = labels[0][labels[0] != -100]
 
         batch = {
             "input_ids": full_enc["input_ids"],
             "attention_mask": full_enc["attention_mask"],
             "labels": labels,
         }
+
         for key in ("pixel_values", "image_grid_thw", "video_grid_thw", "mm_token_type_ids"):
             if key in full_enc:
                 batch[key] = full_enc[key]
+
         return batch
 
     return collate
@@ -256,6 +283,27 @@ def run_validation_generation(
             image.close()
 
         parsed = parse_verifier_output(output_text, expected_claim_ids)
+        # if DEBUG:
+        #     gold = row.get("labels", [])
+
+        #     print("\n" + "=" * 100)
+        #     print("DEBUG VALIDATION GENERATION")
+        #     print("-" * 100)
+        #     print("IMAGE:", row.get("image_path"))
+        #     print("QUESTION:", row.get("question", ""))
+        #     print("PRIOR RESPONSE:", row.get("model_response", ""))
+        #     print("CLAIMS:", row.get("claims", []))
+        #     print("GOLD LABELS:", gold)
+        #     print("-" * 100)
+        #     print("PROMPT:")
+        #     print(prompt)
+        #     print("-" * 100)
+        #     print("RAW MODEL OUTPUT:")
+        #     print(repr(output_text))
+        #     print("-" * 100)
+        #     print("PARSED OUTPUT:")
+        #     print(parsed)
+        #     print("=" * 100 + "\n")
         preds.append(
             {
                 "image_id": row.get("image_id"),
@@ -337,6 +385,7 @@ def main():
 
     train_rows_all = read_jsonl(args.train_jsonl)
     train_rows = filter_rows(train_rows_all, split=args.train_split, require_labels=True)
+
     if not train_rows and not args.train_split:
         train_rows = [row for row in train_rows_all if row.get("labels")]
     if not train_rows:
