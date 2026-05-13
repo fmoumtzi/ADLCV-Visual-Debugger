@@ -1,0 +1,5 @@
+Loaded module: cuda/12.8.1
+Traceback (most recent call last):
+  File "/dtu/blackhole/0d/223821/visual_debugger_project/ADLCV-Visual-Debugger/src/task2/verify_any_model.py", line 10, in <module>
+    from .evaluate_verifier import evaluate_rows
+ImportError: attempted relative import with no known parent package

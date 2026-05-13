@@ -73,8 +73,8 @@ def build_verification_prompt(
 
     pieces = [
         "You are verifying a previous visual answer claim-by-claim.",
-        "For each claim_id, output hallucination as TRUE or FALSE.",
-        "Output format: one line per claim, exactly `claim_id<TAB>TRUE_OR_FALSE`.",
+        "For each claim_id, determine if the claim is hallucinated (TRUE) or correct (FALSE).",
+        "Output format: one line per claim. Format each line exactly like: `claim_id TRUE` or `claim_id FALSE`.",
         "Do not output extra text.",
         f"Question: {question}",
     ]

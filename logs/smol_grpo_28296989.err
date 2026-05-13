@@ -1,0 +1,22 @@
+Loaded module: cuda/12.8.1
+[transformers] warmup_ratio is deprecated and will be removed in v5.2. Use `warmup_steps` instead.
+Loading weights:   0%|          | 0/657 [00:00<?, ?it/s]Loading weights:   0%|          | 3/657 [00:00<00:44, 14.57it/s]Loading weights:   2%|▏         | 10/657 [00:00<00:17, 36.22it/s]Loading weights:   2%|▏         | 16/657 [00:00<00:15, 42.38it/s]Loading weights:   4%|▍         | 25/657 [00:00<00:12, 52.37it/s]Loading weights:   5%|▌         | 34/657 [00:00<00:10, 58.56it/s]Loading weights:   7%|▋         | 43/657 [00:00<00:09, 62.10it/s]Loading weights:   8%|▊         | 52/657 [00:00<00:09, 64.39it/s]Loading weights:   9%|▉         | 61/657 [00:01<00:08, 66.47it/s]Loading weights:  11%|█         | 70/657 [00:01<00:08, 67.60it/s]Loading weights:  12%|█▏        | 79/657 [00:01<00:08, 68.05it/s]Loading weights:  13%|█▎        | 88/657 [00:01<00:08, 68.37it/s]Loading weights:  15%|█▍        | 97/657 [00:01<00:08, 68.78it/s]Loading weights:  16%|█▌        | 105/657 [00:01<00:07, 70.98it/s]Loading weights:  17%|█▋        | 114/657 [00:01<00:07, 70.65it/s]Loading weights:  19%|█▊        | 123/657 [00:01<00:07, 71.60it/s]Loading weights:  20%|██        | 132/657 [00:02<00:07, 70.65it/s]Loading weights:  21%|██▏       | 141/657 [00:02<00:07, 70.79it/s]Loading weights:  23%|██▎       | 150/657 [00:02<00:07, 70.15it/s]Loading weights:  24%|██▍       | 159/657 [00:02<00:07, 70.08it/s]Loading weights:  26%|██▌       | 168/657 [00:02<00:06, 70.54it/s]Loading weights:  27%|██▋       | 177/657 [00:02<00:06, 70.41it/s]Loading weights:  28%|██▊       | 186/657 [00:02<00:06, 70.19it/s]Loading weights:  30%|██▉       | 195/657 [00:02<00:06, 69.47it/s]Loading weights:  31%|███       | 204/657 [00:03<00:06, 70.86it/s]Loading weights:  32%|███▏      | 213/657 [00:03<00:06, 70.65it/s]Loading weights:  37%|███▋      | 244/657 [00:03<00:03, 128.02it/s]Loading weights:  45%|████▌     | 296/657 [00:03<00:01, 230.02it/s]Loading weights:  53%|█████▎    | 351/657 [00:03<00:00, 314.49it/s]Loading weights:  62%|██████▏   | 405/657 [00:03<00:00, 372.52it/s]Loading weights:  70%|██████▉   | 457/657 [00:03<00:00, 413.61it/s]Loading weights:  77%|███████▋  | 509/657 [00:03<00:00, 443.00it/s]Loading weights:  86%|████████▌ | 565/657 [00:03<00:00, 455.44it/s]Loading weights:  95%|█████████▍| 623/657 [00:04<00:00, 488.19it/s]Loading weights: 100%|██████████| 657/657 [00:04<00:00, 158.99it/s]
+[transformers] The tokenizer has new PAD/BOS/EOS tokens that differ from the model config and generation config. The model config and generation config were aligned accordingly, being updated with the tokenizer's values. Updated tokens: {'eos_token_id': 49154, 'bos_token_id': 1, 'pad_token_id': 2}.
+Traceback (most recent call last):
+  File "/dtu/blackhole/0d/223821/visual_debugger_project/ADLCV-Visual-Debugger/src/task2/train_grpo_trl_verifier.py", line 310, in <module>
+    main()
+  File "/dtu/blackhole/0d/223821/visual_debugger_project/ADLCV-Visual-Debugger/src/task2/train_grpo_trl_verifier.py", line 305, in main
+    trainer.train()
+  File "/dtu/blackhole/0d/223821/miniforge3/envs/adlcv/lib/python3.10/site-packages/transformers/trainer.py", line 1427, in train
+    return inner_training_loop(
+  File "/dtu/blackhole/0d/223821/miniforge3/envs/adlcv/lib/python3.10/site-packages/transformers/trainer.py", line 1466, in _inner_training_loop
+    model, train_dataloader = self._prepare_for_training(max_steps, train_dataloader, resume_from_checkpoint)
+  File "/dtu/blackhole/0d/223821/miniforge3/envs/adlcv/lib/python3.10/site-packages/transformers/trainer.py", line 1576, in _prepare_for_training
+    self.create_optimizer()
+  File "/dtu/blackhole/0d/223821/miniforge3/envs/adlcv/lib/python3.10/site-packages/transformers/trainer.py", line 1178, in create_optimizer
+    optimizer_cls, optimizer_kwargs = self.get_optimizer_cls_and_kwargs(self.args, opt_model)
+  File "/dtu/blackhole/0d/223821/miniforge3/envs/adlcv/lib/python3.10/site-packages/transformers/trainer.py", line 1281, in get_optimizer_cls_and_kwargs
+    return handler(ctx)
+  File "/dtu/blackhole/0d/223821/miniforge3/envs/adlcv/lib/python3.10/site-packages/transformers/trainer_optimizer.py", line 247, in _get_bitsandbytes_optimizer
+    raise ImportError(
+ImportError: You need to install `bitsandbytes` in order to use bitsandbytes optimizers: `pip install -U bitsandbytes`

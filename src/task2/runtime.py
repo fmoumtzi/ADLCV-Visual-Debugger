@@ -3,7 +3,7 @@ from typing import Dict, Tuple
 
 import torch
 from PIL import Image
-from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
+from transformers import AutoProcessor, AutoModelForImageTextToText
 
 MODEL_ID = "Qwen/Qwen2-VL-2B-Instruct"
 DEFAULT_LOCAL_MODEL_PATH = os.path.join("models", "Qwen2-VL-2B-Instruct")
@@ -129,7 +129,8 @@ def load_qwen_vl(
         peft_config = PeftConfig.from_pretrained(resolved_path)
         base_model_path = peft_config.base_model_name_or_path
 
-        model = Qwen2VLForConditionalGeneration.from_pretrained(
+        # FIXED: Removed AutoModelForVision2Seq
+        model = AutoModelForImageTextToText.from_pretrained(
             base_model_path,
             **load_kwargs,
         )
@@ -144,7 +145,9 @@ def load_qwen_vl(
 
     else:
         # CASE 2: loading normal base model
-        model = Qwen2VLForConditionalGeneration.from_pretrained(
+        
+        # FIXED: Removed Qwen2VLForConditionalGeneration
+        model = AutoModelForImageTextToText.from_pretrained(
             resolved_path,
             **load_kwargs,
         )

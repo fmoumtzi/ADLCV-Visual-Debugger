@@ -7,16 +7,23 @@ import torch
 from tqdm import tqdm
 from peft import PeftModel
 
-from .evaluate_verifier import evaluate_rows
-from .io_utils import ensure_parent_dir, read_jsonl, write_jsonl
-from .prompts import build_verification_prompt, parse_verifier_output
-from .runtime import load_qwen_vl, open_rgb
+try:
+    from .evaluate_verifier import evaluate_rows
+    from .io_utils import ensure_parent_dir, read_jsonl, write_jsonl
+    from .prompts import build_verification_prompt, parse_verifier_output
+    from .runtime import load_qwen_vl, open_rgb
+except ImportError:
+    from evaluate_verifier import evaluate_rows
+    from io_utils import ensure_parent_dir, read_jsonl, write_jsonl
+    from prompts import build_verification_prompt, parse_verifier_output
+    from runtime import load_qwen_vl, open_rgb
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Unified Task 2 self-verification and evaluation script.")
     parser.add_argument("--input_jsonl", required=True, help="Task 2 Verification JSONL")
     parser.add_argument("--output_jsonl", required=True, help="Where to save predictions")
     parser.add_argument("--metrics_output_json", required=True, help="Where to save metrics JSON")
+    parser.add_argument("--split", default="", help="Optional split filter (train/val/test).")
     
     # Model Loading Arguments
     parser.add_argument("--model_path", required=True, help="Local path or HF ID for the BASE model")
@@ -64,6 +71,9 @@ def main():
     print(f"\n=== Initializing Unified Evaluator ===")
     rows = read_jsonl(args.input_jsonl)
     print(f"Loaded {len(rows)} verification tasks.")
+    if args.split:
+        rows = [row for row in rows if row.get("split") == args.split]
+        print(f"Filtered down to {len(rows)} tasks in the '{args.split}' split.")
 
     # 1. Load the Base Model
     print(f"Loading base model from: {args.model_path}")

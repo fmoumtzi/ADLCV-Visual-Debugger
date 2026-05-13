@@ -12,8 +12,10 @@
 
 set -euo pipefail
 
-# Activate your environment
-source ~/miniforge3/bin/activate adlcv
+# Point directly to your blackhole miniforge installation
+source /dtu/blackhole/0d/223821/miniforge3/bin/activate
+conda activate adlcv
+
 module load cuda/12.8.1 || true
 
 # Run the generation script

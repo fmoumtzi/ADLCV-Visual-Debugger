@@ -1,0 +1,102 @@
+Loaded module: cuda/12.8.1
+[transformers] You are using a model of type `idefics3` to instantiate a model of type `qwen2_vl`. This may be expected if you are loading a checkpoint that shares a subset of the architecture (e.g., loading a `sam2_video` checkpoint into `Sam2Model`), but is otherwise not supported and can yield errors. Please verify that the checkpoint is compatible with the model you are instantiating.
+Loading weights:   0%|          | 0/1 [00:00<?, ?it/s]Loading weights: 100%|██████████| 1/1 [00:00<00:00, 9532.51it/s]
+[transformers] [1mQwen2VLForConditionalGeneration LOAD REPORT[0m from: models/SmolVLM-Instruct
+Key                                                                  | Status     | 
+---------------------------------------------------------------------+------------+-
+model.text_model.layers.{0...23}.self_attn.o_proj.weight             | UNEXPECTED | 
+model.text_model.layers.{0...23}.post_attention_layernorm.weight     | UNEXPECTED | 
+model.vision_model.encoder.layers.{0...26}.mlp.fc2.weight            | UNEXPECTED | 
+model.vision_model.encoder.layers.{0...26}.layer_norm1.weight        | UNEXPECTED | 
+model.text_model.layers.{0...23}.mlp.down_proj.weight                | UNEXPECTED | 
+model.vision_model.encoder.layers.{0...26}.layer_norm1.bias          | UNEXPECTED | 
+model.vision_model.encoder.layers.{0...26}.layer_norm2.bias          | UNEXPECTED | 
+model.vision_model.encoder.layers.{0...26}.self_attn.out_proj.weight | UNEXPECTED | 
+model.vision_model.encoder.layers.{0...26}.self_attn.k_proj.bias     | UNEXPECTED | 
+model.vision_model.encoder.layers.{0...26}.self_attn.v_proj.bias     | UNEXPECTED | 
+model.vision_model.encoder.layers.{0...26}.mlp.fc1.bias              | UNEXPECTED | 
+model.vision_model.encoder.layers.{0...26}.self_attn.q_proj.bias     | UNEXPECTED | 
+model.vision_model.encoder.layers.{0...26}.self_attn.k_proj.weight   | UNEXPECTED | 
+model.vision_model.encoder.layers.{0...26}.mlp.fc2.bias              | UNEXPECTED | 
+model.text_model.layers.{0...23}.self_attn.k_proj.weight             | UNEXPECTED | 
+model.vision_model.encoder.layers.{0...26}.layer_norm2.weight        | UNEXPECTED | 
+model.vision_model.embeddings.patch_embedding.bias                   | UNEXPECTED | 
+model.vision_model.encoder.layers.{0...26}.self_attn.v_proj.weight   | UNEXPECTED | 
+model.text_model.layers.{0...23}.self_attn.q_proj.weight             | UNEXPECTED | 
+model.text_model.norm.weight                                         | UNEXPECTED | 
+model.vision_model.encoder.layers.{0...26}.self_attn.q_proj.weight   | UNEXPECTED | 
+model.text_model.layers.{0...23}.mlp.up_proj.weight                  | UNEXPECTED | 
+model.text_model.layers.{0...23}.mlp.gate_proj.weight                | UNEXPECTED | 
+model.text_model.layers.{0...23}.input_layernorm.weight              | UNEXPECTED | 
+model.vision_model.encoder.layers.{0...26}.self_attn.out_proj.bias   | UNEXPECTED | 
+model.text_model.layers.{0...23}.self_attn.v_proj.weight             | UNEXPECTED | 
+model.vision_model.encoder.layers.{0...26}.mlp.fc1.weight            | UNEXPECTED | 
+model.vision_model.embeddings.position_embedding.weight              | UNEXPECTED | 
+model.vision_model.post_layernorm.weight                             | UNEXPECTED | 
+model.connector.modality_projection.proj.weight                      | UNEXPECTED | 
+model.vision_model.post_layernorm.bias                               | UNEXPECTED | 
+model.text_model.embed_tokens.weight                                 | UNEXPECTED | 
+model.vision_model.embeddings.patch_embedding.weight                 | UNEXPECTED | 
+model.language_model.layers.{0...23}.self_attn.k_proj.weight         | MISSING    | 
+model.language_model.layers.{0...23}.mlp.gate_proj.weight            | MISSING    | 
+model.language_model.layers.{0...23}.mlp.down_proj.weight            | MISSING    | 
+model.visual.blocks.{0...31}.attn.qkv.bias                           | MISSING    | 
+model.visual.blocks.{0...31}.mlp.fc2.weight                          | MISSING    | 
+model.visual.blocks.{0...31}.norm2.weight                            | MISSING    | 
+model.visual.blocks.{0...31}.attn.proj.bias                          | MISSING    | 
+model.language_model.layers.{0...23}.self_attn.q_proj.bias           | MISSING    | 
+model.language_model.layers.{0...23}.post_attention_layernorm.weight | MISSING    | 
+model.visual.patch_embed.proj.weight                                 | MISSING    | 
+model.language_model.layers.{0...23}.mlp.up_proj.weight              | MISSING    | 
+model.visual.blocks.{0...31}.norm1.weight                            | MISSING    | 
+model.language_model.layers.{0...23}.self_attn.q_proj.weight         | MISSING    | 
+model.visual.blocks.{0...31}.mlp.fc2.bias                            | MISSING    | 
+model.language_model.layers.{0...23}.self_attn.k_proj.bias           | MISSING    | 
+model.language_model.layers.{0...23}.self_attn.v_proj.bias           | MISSING    | 
+model.visual.blocks.{0...31}.mlp.fc1.bias                            | MISSING    | 
+model.visual.blocks.{0...31}.mlp.fc1.weight                          | MISSING    | 
+model.visual.blocks.{0...31}.norm1.bias                              | MISSING    | 
+model.language_model.layers.{0...23}.self_attn.v_proj.weight         | MISSING    | 
+model.visual.blocks.{0...31}.attn.proj.weight                        | MISSING    | 
+model.language_model.layers.{0...23}.input_layernorm.weight          | MISSING    | 
+model.language_model.layers.{0...23}.self_attn.o_proj.weight         | MISSING    | 
+model.visual.blocks.{0...31}.attn.qkv.weight                         | MISSING    | 
+model.visual.blocks.{0...31}.norm2.bias                              | MISSING    | 
+model.visual.merger.mlp.{0, 2}.weight                                | MISSING    | 
+model.visual.merger.ln_q.weight                                      | MISSING    | 
+model.language_model.embed_tokens.weight                             | MISSING    | 
+model.visual.merger.mlp.{0, 2}.bias                                  | MISSING    | 
+model.visual.merger.ln_q.bias                                        | MISSING    | 
+model.language_model.norm.weight                                     | MISSING    | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:	those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+SFT epoch 1/1:   0%|          | 0/999 [00:00<?, ?it/s]SFT epoch 1/1:   0%|          | 0/999 [00:00<?, ?it/s]
+Traceback (most recent call last):
+  File "/dtu/blackhole/0d/223821/visual_debugger_project/ADLCV-Visual-Debugger/src/task2/train_sft_verifier.py", line 524, in <module>
+    main()
+  File "/dtu/blackhole/0d/223821/visual_debugger_project/ADLCV-Visual-Debugger/src/task2/train_sft_verifier.py", line 409, in main
+    for step, batch in enumerate(pbar, start=1):
+  File "/dtu/blackhole/0d/223821/miniforge3/envs/adlcv/lib/python3.10/site-packages/tqdm/std.py", line 1181, in __iter__
+    for obj in iterable:
+  File "/dtu/blackhole/0d/223821/miniforge3/envs/adlcv/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 741, in __next__
+    data = self._next_data()
+  File "/dtu/blackhole/0d/223821/miniforge3/envs/adlcv/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 801, in _next_data
+    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
+  File "/dtu/blackhole/0d/223821/miniforge3/envs/adlcv/lib/python3.10/site-packages/torch/utils/data/_utils/fetch.py", line 57, in fetch
+    return self.collate_fn(data)
+  File "/dtu/blackhole/0d/223821/visual_debugger_project/ADLCV-Visual-Debugger/src/task2/train_sft_verifier.py", line 155, in collate
+    processor.apply_chat_template(full_msgs, tokenize=False, add_generation_prompt=False)
+  File "/dtu/blackhole/0d/223821/miniforge3/envs/adlcv/lib/python3.10/site-packages/transformers/processing_utils.py", line 1858, in apply_chat_template
+    prompt, generation_indices = render_jinja_template(
+  File "/dtu/blackhole/0d/223821/miniforge3/envs/adlcv/lib/python3.10/site-packages/transformers/utils/chat_template_utils.py", line 573, in render_jinja_template
+    rendered_chat = compiled_template.render(
+  File "/dtu/blackhole/0d/223821/miniforge3/envs/adlcv/lib/python3.10/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+  File "/dtu/blackhole/0d/223821/miniforge3/envs/adlcv/lib/python3.10/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "<template>", line 1, in top-level template code
+  File "/dtu/blackhole/0d/223821/miniforge3/envs/adlcv/lib/python3.10/site-packages/jinja2/sandbox.py", line 293, in getitem
+    return obj[argument]
+jinja2.exceptions.UndefinedError: str object has no element 0

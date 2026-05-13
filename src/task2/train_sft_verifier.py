@@ -146,7 +146,21 @@ def build_collate_fn(processor):
                     ],
                 }
             ]
-            full_msgs = user_msg + [{"role": "assistant", "content": pair["target"]}]
+            full_msgs = [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image"},
+                        {"type": "text", "text": pair["prompt"]}
+                    ]
+                },
+                {
+                    "role": "assistant",
+                    "content": [
+                        {"type": "text", "text": pair["target"]}  # <-- Changed to "target"
+                    ]
+                }
+            ]
 
             prompt_texts.append(
                 processor.apply_chat_template(user_msg, tokenize=False, add_generation_prompt=True)

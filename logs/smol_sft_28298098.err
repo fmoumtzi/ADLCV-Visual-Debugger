@@ -1,0 +1,14 @@
+Loaded module: cuda/12.8.1
+Traceback (most recent call last):
+  File "/dtu/blackhole/0d/223821/visual_debugger_project/ADLCV-Visual-Debugger/src/task2/train_sft_verifier.py", line 21, in <module>
+    from .evaluate_verifier import evaluate_rows
+ImportError: attempted relative import with no known parent package
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/dtu/blackhole/0d/223821/visual_debugger_project/ADLCV-Visual-Debugger/src/task2/train_sft_verifier.py", line 33, in <module>
+    from runtime import load_qwen_vl, open_rgb
+  File "/dtu/blackhole/0d/223821/visual_debugger_project/ADLCV-Visual-Debugger/src/task2/runtime.py", line 6, in <module>
+    from transformers import AutoProcessor, AutoModelForVision2Seq
+ImportError: cannot import name 'AutoModelForVision2Seq' from 'transformers' (/dtu/blackhole/0d/223821/miniforge3/envs/adlcv/lib/python3.10/site-packages/transformers/__init__.py)

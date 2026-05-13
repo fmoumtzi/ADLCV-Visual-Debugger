@@ -1,0 +1,72 @@
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@hpc.dtu.dk>
+Subject: Job 28298098: <smol_sft> in cluster <dcc> Exited
+
+Job <smol_sft> was submitted from host <hpclogin1> by user <s253740> in cluster <dcc> at Mon Apr 27 00:12:29 2026
+Job was executed on host(s) <4*n-62-12-22>, in queue <gpua100>, as user <s253740> in cluster <dcc> at Mon Apr 27 00:34:33 2026
+</zhome/0a/c/223821> was used as the home directory.
+</dtu/blackhole/0d/223821/visual_debugger_project/ADLCV-Visual-Debugger> was used as the working directory.
+Started at Mon Apr 27 00:34:33 2026
+Terminated at Mon Apr 27 00:34:42 2026
+Results reported at Mon Apr 27 00:34:42 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/usr/bin/env bash
+#BSUB -J smol_sft
+#BSUB -q gpua100
+#BSUB -gpu "num=1:mode=exclusive_process"
+#BSUB -n 4
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=32GB]"
+#BSUB -M 32GB
+#BSUB -W 12:00
+#BSUB -o logs/smol_sft_%J.out
+#BSUB -e logs/smol_sft_%J.err
+
+set -euo pipefail
+
+# Activate your environment
+source /dtu/blackhole/0d/223821/miniforge3/bin/activate
+conda activate adlcv
+module load cuda/12.8.1 || true
+
+# Launch SFT Training
+python src/task2/train_sft_verifier.py \
+  --train_jsonl results/task2/smolvlm_5k_verification_data.jsonl \
+  --output_dir results/task2/sft_smolvlm_lora \
+  --model_path models/SmolVLM-Instruct \
+  --use_lora \
+  --lora_r 8 \
+  --epochs 1 \
+  --batch_size 4 \
+  --grad_accum_steps 2 \
+  --slice_by_question_type
+------------------------------------------------------------
+
+Exited with exit code 1.
+
+Resource usage summary:
+
+    CPU time :                                   5.36 sec.
+    Max Memory :                                 -
+    Average Memory :                             -
+    Total Requested Memory :                     131072.00 MB
+    Delta Memory :                               -
+    Max Swap :                                   -
+    Max Processes :                              -
+    Max Threads :                                -
+    Run time :                                   9 sec.
+    Turnaround time :                            1333 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <logs/smol_sft_28298098.err> for stderr output of this job.
+

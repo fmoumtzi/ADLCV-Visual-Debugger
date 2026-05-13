@@ -1,0 +1,24 @@
+Loaded module: cuda/12.8.1
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/657 [00:00<?, ?it/s]Loading weights:  53%|█████▎    | 346/657 [00:00<00:00, 3459.59it/s]Loading weights: 100%|██████████| 657/657 [00:00<00:00, 3821.83it/s]
+Traceback (most recent call last):
+  File "/dtu/blackhole/0d/223821/miniforge3/envs/adlcv/lib/python3.10/site-packages/peft/config.py", line 317, in _get_peft_type
+    config_file = hf_hub_download(
+  File "/dtu/blackhole/0d/223821/miniforge3/envs/adlcv/lib/python3.10/site-packages/huggingface_hub/utils/_validators.py", line 84, in _inner_fn
+    validate_repo_id(arg_value)
+  File "/dtu/blackhole/0d/223821/miniforge3/envs/adlcv/lib/python3.10/site-packages/huggingface_hub/utils/_validators.py", line 132, in validate_repo_id
+    raise HFValidationError(
+huggingface_hub.errors.HFValidationError: Repo id must be in the form 'repo_name' or 'namespace/repo_name': 'results/task2/sft_smolvlm_lora'. Use `repo_type` argument if needed.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/dtu/blackhole/0d/223821/visual_debugger_project/ADLCV-Visual-Debugger/src/task2/merge_adapters.py", line 36, in <module>
+    main()
+  File "/dtu/blackhole/0d/223821/visual_debugger_project/ADLCV-Visual-Debugger/src/task2/merge_adapters.py", line 21, in main
+    model = PeftModel.from_pretrained(model, args.lora_model)
+  File "/dtu/blackhole/0d/223821/miniforge3/envs/adlcv/lib/python3.10/site-packages/peft/peft_model.py", line 473, in from_pretrained
+    config = PEFT_TYPE_TO_CONFIG_MAPPING[PeftConfig._get_peft_type(model_id, **hf_kwargs)].from_pretrained(
+  File "/dtu/blackhole/0d/223821/miniforge3/envs/adlcv/lib/python3.10/site-packages/peft/config.py", line 323, in _get_peft_type
+    raise ValueError(f"Can't find '{CONFIG_NAME}' at '{model_id}'")
+ValueError: Can't find 'adapter_config.json' at 'results/task2/sft_smolvlm_lora'

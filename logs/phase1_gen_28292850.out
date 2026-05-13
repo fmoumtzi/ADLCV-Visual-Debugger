@@ -1,0 +1,74 @@
+=== Starting Experiment: exp_005_smolvlm_vqa_5k ===
+Loading up to 5000 samples from the VQA validation split...
+Loading SmolVLM-Instruct into VRAM...
+Falling back to float16 and SDPA.
+Phase 1 complete. Saved 5000 generations to results/exp_005_smolvlm_vqa_5k/generations.jsonl
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@hpc.dtu.dk>
+Subject: Job 28292850: <smolvlm_5k_gen> in cluster <dcc> Done
+
+Job <smolvlm_5k_gen> was submitted from host <hpclogin1> by user <s253740> in cluster <dcc> at Sun Apr 26 15:22:34 2026
+Job was executed on host(s) <4*n-62-12-22>, in queue <gpua100>, as user <s253740> in cluster <dcc> at Sun Apr 26 15:36:01 2026
+</zhome/0a/c/223821> was used as the home directory.
+</dtu/blackhole/0d/223821/visual_debugger_project/ADLCV-Visual-Debugger> was used as the working directory.
+Started at Sun Apr 26 15:36:01 2026
+Terminated at Sun Apr 26 16:35:47 2026
+Results reported at Sun Apr 26 16:35:47 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/usr/bin/env bash
+#BSUB -J smolvlm_5k_gen
+#BSUB -q gpua100
+#BSUB -gpu "num=1:mode=exclusive_process"
+#BSUB -n 4
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=24GB]"
+#BSUB -M 24GB
+#BSUB -W 12:00
+#BSUB -o logs/phase1_gen_%J.out
+#BSUB -e logs/phase1_gen_%J.err
+
+set -euo pipefail
+
+# Point directly to your blackhole miniforge installation
+source /dtu/blackhole/0d/223821/miniforge3/bin/activate
+conda activate adlcv
+
+module load cuda/12.8.1 || true
+
+# Run the generation script
+python src/phase1_generation.py \
+  --vlm_model SmolVLM-Instruct \
+  --dataset vqa \
+  --num_samples 5000 \
+  --prompt_type structured \
+  --exp_name exp_005_smolvlm_vqa_5k
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   3712.00 sec.
+    Max Memory :                                 2009 MB
+    Average Memory :                             1870.33 MB
+    Total Requested Memory :                     98304.00 MB
+    Delta Memory :                               96295.00 MB
+    Max Swap :                                   -
+    Max Processes :                              4
+    Max Threads :                                16
+    Run time :                                   3586 sec.
+    Turnaround time :                            4393 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <logs/phase1_gen_28292850.err> for stderr output of this job.
+

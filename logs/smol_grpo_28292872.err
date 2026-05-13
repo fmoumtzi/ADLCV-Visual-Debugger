@@ -1,0 +1,7 @@
+Loaded module: cuda/12.8.1
+Traceback (most recent call last):
+  File "/dtu/blackhole/0d/223821/visual_debugger_project/ADLCV-Visual-Debugger/src/task2/train_grpo_trl_verifier.py", line 310, in <module>
+    main()
+  File "/dtu/blackhole/0d/223821/visual_debugger_project/ADLCV-Visual-Debugger/src/task2/train_grpo_trl_verifier.py", line 195, in main
+    from peft import LoraConfig
+ModuleNotFoundError: No module named 'peft'

@@ -1,0 +1,9 @@
+Loaded module: cuda/12.8.1
+Traceback (most recent call last):
+  File "/dtu/blackhole/0d/223821/visual_debugger_project/ADLCV-Visual-Debugger/src/task2/train_sft_verifier.py", line 524, in <module>
+    main()
+  File "/dtu/blackhole/0d/223821/visual_debugger_project/ADLCV-Visual-Debugger/src/task2/train_sft_verifier.py", line 338, in main
+    train_rows_all = read_jsonl(args.train_jsonl)
+  File "/dtu/blackhole/0d/223821/visual_debugger_project/ADLCV-Visual-Debugger/src/task2/io_utils.py", line 24, in read_jsonl
+    with open(path, "r", encoding="utf-8") as f:
+FileNotFoundError: [Errno 2] No such file or directory: 'results/task2/smolvlm_5k_verification_data.jsonl'

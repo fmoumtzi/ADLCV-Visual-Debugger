@@ -302,7 +302,8 @@ def main():
         eval_dataset=eval_dataset,
         peft_config=peft_config,
     )
-    trainer.train()
+    #trainer.train()
+    trainer.train(resume_from_checkpoint="results/task2/grpo_smolvlm_sft_merged_lora_v2/checkpoint-300")
     trainer.save_model(args.output_dir)
 
 

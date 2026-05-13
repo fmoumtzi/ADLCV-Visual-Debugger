@@ -1,0 +1,76 @@
+Initializing fresh LoRA adapters
+trainable params: 9,043,968 || all params: 2,484,548,224 || trainable%: 0.3640
+Loaded base model from models/SmolVLM-Instruct on cuda
+Train samples: 3995 | Validation samples: 494
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@hpc.dtu.dk>
+Subject: Job 28296988: <smol_sft> in cluster <dcc> Exited
+
+Job <smol_sft> was submitted from host <hpclogin1> by user <s253740> in cluster <dcc> at Sun Apr 26 18:52:22 2026
+Job was executed on host(s) <4*n-62-12-24>, in queue <gpua100>, as user <s253740> in cluster <dcc> at Sun Apr 26 22:56:23 2026
+</zhome/0a/c/223821> was used as the home directory.
+</dtu/blackhole/0d/223821/visual_debugger_project/ADLCV-Visual-Debugger> was used as the working directory.
+Started at Sun Apr 26 22:56:23 2026
+Terminated at Sun Apr 26 22:57:32 2026
+Results reported at Sun Apr 26 22:57:32 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/usr/bin/env bash
+#BSUB -J smol_sft
+#BSUB -q gpua100
+#BSUB -gpu "num=1:mode=exclusive_process"
+#BSUB -n 4
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=32GB]"
+#BSUB -M 32GB
+#BSUB -W 12:00
+#BSUB -o logs/smol_sft_%J.out
+#BSUB -e logs/smol_sft_%J.err
+
+set -euo pipefail
+
+# Activate your environment
+source /dtu/blackhole/0d/223821/miniforge3/bin/activate
+conda activate adlcv
+module load cuda/12.8.1 || true
+
+# Launch SFT Training
+python src/task2/train_sft_verifier.py \
+  --train_jsonl results/task2/smolvlm_5k_verification_data.jsonl \
+  --output_dir results/task2/sft_smolvlm_lora \
+  --model_path models/SmolVLM-Instruct \
+  --use_lora \
+  --lora_r 8 \
+  --epochs 1 \
+  --batch_size 4 \
+  --grad_accum_steps 2 \
+  --slice_by_question_type
+------------------------------------------------------------
+
+Exited with exit code 1.
+
+Resource usage summary:
+
+    CPU time :                                   68.00 sec.
+    Max Memory :                                 879 MB
+    Average Memory :                             879.00 MB
+    Total Requested Memory :                     131072.00 MB
+    Delta Memory :                               130193.00 MB
+    Max Swap :                                   -
+    Max Processes :                              4
+    Max Threads :                                9
+    Run time :                                   69 sec.
+    Turnaround time :                            14710 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <logs/smol_sft_28296988.err> for stderr output of this job.
+

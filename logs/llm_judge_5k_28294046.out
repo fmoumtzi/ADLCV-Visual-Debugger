@@ -1,0 +1,105 @@
+=== Starting Evaluation for: exp_005_smolvlm_vqa_5k ===
+Loading Judge Model 'Patronus-Lynx-8B' into VRAM...
+Falling back to float16 and SDPA.
+Failed to parse JSON for image 262162
+Failed to parse JSON for image 393421
+Failed to parse JSON for image 294
+Failed to parse JSON for image 131611
+Failed to parse JSON for image 131611
+Failed to parse JSON for image 262703
+Failed to parse JSON for image 524850
+Failed to parse JSON for image 590
+Failed to parse JSON for image 524889
+Failed to parse JSON for image 761
+Failed to parse JSON for image 525050
+Failed to parse JSON for image 775
+Failed to parse JSON for image 775
+Failed to parse JSON for image 525183
+Failed to parse JSON for image 394133
+Failed to parse JSON for image 132042
+Failed to parse JSON for image 1029
+Failed to parse JSON for image 525381
+Failed to parse JSON for image 423396
+Failed to parse JSON for image 568191
+Failed to parse JSON for image 1292
+Failed to parse JSON for image 394510
+Failed to parse JSON for image 525616
+Failed to parse JSON for image 525619
+Failed to parse JSON for image 525702
+Failed to parse JSON for image 263586
+Failed to parse JSON for image 263679
+Failed to parse JSON for image 1584
+Failed to parse JSON for image 132791
+Failed to parse JSON for image 524595
+Failed to parse JSON for image 526342
+Failed to parse JSON for image 395388
+Failed to parse JSON for image 133327
+Failed to parse JSON for image 133386
+Phase 2 complete. Saved evaluations to results/exp_005_smolvlm_vqa_5k/evaluations.jsonl
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@hpc.dtu.dk>
+Subject: Job 28294046: <llm_judge_5k> in cluster <dcc> Done
+
+Job <llm_judge_5k> was submitted from host <hpclogin1> by user <s253740> in cluster <dcc> at Sun Apr 26 17:10:53 2026
+Job was executed on host(s) <4*n-62-12-22>, in queue <gpua100>, as user <s253740> in cluster <dcc> at Sun Apr 26 18:30:45 2026
+</zhome/0a/c/223821> was used as the home directory.
+</dtu/blackhole/0d/223821/visual_debugger_project/ADLCV-Visual-Debugger> was used as the working directory.
+Started at Sun Apr 26 18:30:45 2026
+Terminated at Sun Apr 26 22:47:58 2026
+Results reported at Sun Apr 26 22:47:58 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/usr/bin/env bash
+#BSUB -J llm_judge_5k
+#BSUB -q gpua100
+#BSUB -gpu "num=1:mode=exclusive_process"
+#BSUB -n 4
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=32GB]"
+#BSUB -M 32GB
+#BSUB -W 12:00
+#BSUB -o logs/llm_judge_5k_%J.out
+#BSUB -e logs/llm_judge_5k_%J.err
+
+set -euo pipefail
+
+# Point directly to your blackhole miniforge installation
+source /dtu/blackhole/0d/223821/miniforge3/bin/activate
+conda activate adlcv
+
+module load cuda/12.8.1 || true
+
+# Run the LLM Judge evaluation
+python src/llm_judge.py \
+  --judge_model Patronus-Lynx-8B \
+  --exp_name exp_005_smolvlm_vqa_5k \
+  --eval_prompt_type taxonomy_json
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   15469.00 sec.
+    Max Memory :                                 1308 MB
+    Average Memory :                             1279.43 MB
+    Total Requested Memory :                     131072.00 MB
+    Delta Memory :                               129764.00 MB
+    Max Swap :                                   -
+    Max Processes :                              4
+    Max Threads :                                16
+    Run time :                                   15433 sec.
+    Turnaround time :                            20225 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <logs/llm_judge_5k_28294046.err> for stderr output of this job.
+

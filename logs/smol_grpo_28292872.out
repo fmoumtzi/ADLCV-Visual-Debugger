@@ -1,0 +1,73 @@
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@hpc.dtu.dk>
+Subject: Job 28292872: <smol_grpo> in cluster <dcc> Exited
+
+Job <smol_grpo> was submitted from host <hpclogin1> by user <s253740> in cluster <dcc> at Sun Apr 26 15:34:56 2026
+Job was executed on host(s) <4*n-62-12-22>, in queue <gpua100>, as user <s253740> in cluster <dcc> at Sun Apr 26 18:30:16 2026
+</zhome/0a/c/223821> was used as the home directory.
+</dtu/blackhole/0d/223821/visual_debugger_project/ADLCV-Visual-Debugger> was used as the working directory.
+Started at Sun Apr 26 18:30:16 2026
+Terminated at Sun Apr 26 18:30:20 2026
+Results reported at Sun Apr 26 18:30:20 2026
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/usr/bin/env bash
+#BSUB -J smol_grpo
+#BSUB -q gpua100
+#BSUB -gpu "num=1:mode=exclusive_process"
+#BSUB -n 4
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=32GB]"
+#BSUB -M 32GB
+#BSUB -W 12:00
+#BSUB -o logs/smol_grpo_%J.out
+#BSUB -e logs/smol_grpo_%J.err
+
+set -euo pipefail
+
+# Activate your environment
+source /dtu/blackhole/0d/223821/miniforge3/bin/activate
+conda activate adlcv
+module load cuda/12.8.1 || true
+
+# Launch GRPO Training (16-bit optimized)
+python src/task2/train_grpo_trl_verifier.py \
+  --train_jsonl results/task2/smolvlm_5k_verification_data.jsonl \
+  --output_dir results/task2/grpo_smolvlm_lora \
+  --model smolvlm \
+  --model_path models/SmolVLM-Instruct \
+  --per_device_train_batch_size 1 \
+  --gradient_accumulation_steps 4 \
+  --num_generations 4 \
+  --max_completion_length 64 \
+  --lora_r 8 \
+  --num_train_epochs 1.0
+------------------------------------------------------------
+
+Exited with exit code 1.
+
+Resource usage summary:
+
+    CPU time :                                   2.56 sec.
+    Max Memory :                                 -
+    Average Memory :                             -
+    Total Requested Memory :                     131072.00 MB
+    Delta Memory :                               -
+    Max Swap :                                   -
+    Max Processes :                              -
+    Max Threads :                                -
+    Run time :                                   4 sec.
+    Turnaround time :                            10524 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <logs/smol_grpo_28292872.err> for stderr output of this job.
+
